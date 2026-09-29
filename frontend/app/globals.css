@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #183D2B;
+  --color-secondary: #4E6B48;
+  --color-accent: #E36A2E;
+  --color-neutral: #F4F2EB;
+  --color-neutral-dark: #ECE8DD;
+  --color-sand: #E7E3D7;
+
+  --font-serif: var(--font-serif), Georgia, Cambria, serif;
+  --font-sans: var(--font-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-mono), monospace;
+}
+
+:root {
+  --primary: #183D2B;
+  --secondary: #4E6B48;
+  --accent: #E36A2E;
+  --neutral: #F4F2EB;
+}
+
+body {
+  background-color: #F4F2EB;
+  color: #183D2B;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Custom topo contour subtle styling */
+.topo-contour-bg {
+  background-image: radial-gradient(rgba(24, 61, 43, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
