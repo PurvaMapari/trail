@@ -108,24 +108,91 @@ Trail/
 
 ---
 
-## Getting Started
+---
 
-1. **Navigate to the frontend folder:**
-   ```bash
-   cd frontend
-   ```
+## AI Agent: TRAIL Scout (Powered by Google Gemini 1.5 Pro)
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+TRAIL features an intelligent exploration companion, **TRAIL Scout**, calibrated with deep local knowledge of Panaji, Goa (Fontainhas Latin quarter, Altinho hills, Mandovi riverfront, Campal, and Miramar).
 
-3. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
+### Capabilities
+- **Flagship Reasoning Model**: Uses `gemini-1.5-pro` by default for deep multi-turn contextual reasoning, pedestrian pacing, and sensory ambience matching.
+- **Model Switching**: Easily switch between **Gemini 1.5 Pro** (deepest insights), **Gemini 2.0 Flash** (next-gen speed), and **Gemini 1.5 Flash** (lightweight).
+- **Multi-Tier Resiliency Waterfall**: If a requested model encounters quota limits or transient issues, it automatically degrades smoothly through alternative Gemini models before gracefully engaging the built-in offline local knowledge base.
+- **Zero-Setup Offline Fallback**: Even without an API key or external internet connection, the system functions 100% reliably using the curated Panaji knowledge base.
+- **Direct Route Integration**: Users can add recommended spots directly to their active itinerary in one click.
 
-4. **Verify production build:**
+---
+
+## Running on Another Laptop After Git Push
+
+When you push this repository to GitHub and someone else clones it, they can get started in seconds without needing to touch private secrets or break anything.
+
+### 1. Clone the repository
+```bash
+git clone <your-repo-url>
+cd trail
+```
+
+### 2. Install dependencies
+```bash
+# In root directory:
+npm run install:all
+
+# Or separately:
+cd backend && npm install
+cd ../frontend && npm install
+```
+
+### 3. Run the development servers
+In terminal 1 (Backend - Port 4000):
+```bash
+npm run dev:backend
+```
+
+In terminal 2 (Frontend - Port 3000):
+```bash
+npm run dev:frontend
+```
+
+Open your browser to: **http://localhost:3000**
+
+---
+
+## Configuring the Gemini API Key
+
+You have **two seamless options** for configuring your Google Gemini API key:
+
+### Option A: Directly in the Web UI (Zero Config / Recommended for teammates)
+1. Open the website at `http://localhost:3000`.
+2. Click the floating **TRAIL Scout** button in the bottom-right corner.
+3. Click the **⚙️ Settings** icon in the chat header.
+4. Paste your free Gemini API key (get one in 30 seconds at [Google AI Studio](https://aistudio.google.com/app/apikey)).
+5. Select your desired model (**Gemini 1.5 Pro** recommended) and click **Save & Apply**.
+> *🔒 **Git-safe**: Your key is stored in your browser's local storage and is never committed to Git.*
+
+### Option B: Via `.env` on the backend (For developers/servers)
+1. Create `backend/.env` from the template:
    ```bash
-   npm run build
+   cp backend/.env.example backend/.env
    ```
+2. Open `backend/.env` and add:
+   ```env
+   PORT=4000
+   FRONTEND_URL=http://localhost:3000
+   GEMINI_MODEL=gemini-1.5-pro
+   GEMINI_API_KEY=AIzaSy...your_key_here
+   ```
+3. Restart the backend server. The backend will automatically log:
+   `✦ AI Engine: ✅ Gemini Active (gemini-1.5-pro)`
+
+---
+
+## Production Build Verification
+
+```bash
+# Verify backend
+npm run build:backend
+
+# Verify frontend
+npm run build:frontend
+```

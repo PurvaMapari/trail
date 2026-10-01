@@ -1,0 +1,23 @@
+{
+  "name": "fluxtrail",
+  "version": "1.0.0",
+  "description": "TRAIL — Exploration and discovery platform with Gemini 1.5 Pro AI Scout",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "install:all": "npm install --prefix frontend && npm install --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:backend": "npm run build --prefix backend"
+  },
+  "keywords": [
+    "trail",
+    "gemini",
+    "ai-agent",
+    "travel",
+    "goa"
+  ],
+  "author": "",
+  "license": "ISC"
+}

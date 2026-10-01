@@ -3,6 +3,7 @@ import { Newsreader, Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { TrailChatbot } from '@/components/chatbot/TrailChatbot';
 
 const newsreader = Newsreader({
   subsets: ['latin'],
@@ -43,6 +44,7 @@ export default function RootLayout({
         <Navbar />
         <div className="flex-1 flex flex-col">{children}</div>
         <Footer />
+        <TrailChatbot />
       </body>
     </html>
   );
