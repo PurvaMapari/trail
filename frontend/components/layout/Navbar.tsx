@@ -27,7 +27,7 @@ export function Navbar() {
             TRAIL
           </span>
           <span className="hidden sm:inline-block text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-[#183D2B]/5 text-[#183D2B]/60 border border-[#183D2B]/10">
-            v2.6 // CARTOGRAPHY
+            PANAJI
           </span>
         </Link>
 
