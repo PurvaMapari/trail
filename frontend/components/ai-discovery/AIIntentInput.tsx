@@ -48,7 +48,7 @@ export function AIIntentInput({
         <button
           type="button"
           onClick={onSubmit}
-          disabled={isLoading || !prompt.trim()}
+          disabled={isLoading}
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#ECE8DD] hover:bg-[#183D2B] hover:text-[#FAF8F3] text-[#183D2B] font-mono text-[10px] font-bold tracking-wider transition-all disabled:opacity-40 cursor-pointer"
         >
           <CornerDownLeft className="w-3 h-3" />
@@ -63,15 +63,25 @@ export function AIIntentInput({
           value={prompt}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="I have 2 hours, want good coffee, some art and somewhere quiet..."
-          className="w-full bg-transparent font-serif italic text-base sm:text-xl lg:text-2xl text-[#183D2B] placeholder:text-[#183D2B]/35 focus:outline-hidden resize-none leading-relaxed"
+          disabled={isLoading}
+          placeholder="Describe your ideal walk — 'quiet coffee, some street art, and a riverside view by 5pm'"
+          className="w-full bg-transparent font-serif italic text-base sm:text-xl lg:text-2xl text-[#183D2B] placeholder:text-[#183D2B]/30 focus:outline-hidden resize-none leading-relaxed disabled:opacity-60"
         />
 
         {/* Input Footer Telemetry */}
         <div className="flex items-center justify-between pt-2 border-t border-[#183D2B]/10 text-[10px] sm:text-[11px] font-mono">
-          <div className="flex items-center gap-1.5 text-[#E36A2E] font-semibold">
-            <span className="w-2 h-2 rounded-full bg-[#E36A2E] animate-pulse" />
-            <span>INTENT PARSER ACTIVE · LATENT CADENCE DETECTED</span>
+          <div className="flex items-center gap-1.5 font-semibold">
+            {prompt.trim() ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-[#E36A2E] animate-pulse" />
+                <span className="text-[#E36A2E]">INTENT PARSER ACTIVE · LATENT CADENCE DETECTED</span>
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 rounded-full bg-[#183D2B]/30" />
+                <span className="text-[#183D2B]/40">AWAITING EXPEDITION INTENT...</span>
+              </>
+            )}
           </div>
 
           <span className="text-[#183D2B]/50">

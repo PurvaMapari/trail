@@ -215,7 +215,15 @@ function MessageBubble({ msg, spotCards, followUps, onFollowUp, source, modelUse
 
   // Format bold markdown **text** in AI responses
   const formatText = (text: string) => {
-    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    // First: strip ALL ">> SpotName" lines (they render as spot cards below the bubble)
+    const cleaned = text
+      .split('\n')
+      .filter((line) => !line.trimStart().startsWith('>> '))
+      .join('\n')
+      .trim();
+
+    // Then: split on **bold** markers and render
+    const parts = cleaned.split(/(\*\*[^*]+\*\*)/g);
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return (
@@ -224,8 +232,6 @@ function MessageBubble({ msg, spotCards, followUps, onFollowUp, source, modelUse
           </strong>
         );
       }
-      // Strip ">> SpotName" lines from display (they're shown as cards)
-      if (part.startsWith('>> ')) return null;
       return part;
     });
   };
@@ -314,11 +320,12 @@ export function TrailChatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+  const [loadingHint, setLoadingHint] = useState('Scouting hidden corners of Panaji...');
 
   // Settings & API Key state
   const [showSettings, setShowSettings] = useState(false);
   const [userApiKey, setUserApiKey] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gemini-1.5-pro');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   const [showKeyText, setShowKeyText] = useState(false);
   const [keySavedBanner, setKeySavedBanner] = useState(false);
   const [serverHasKey, setServerHasKey] = useState(false);
@@ -391,6 +398,39 @@ export function TrailChatbot() {
     }
   }, [isOpen, isMinimized, showSettings]);
 
+  const getLoadingHint = (query: string): string => {
+    const q = query.toLowerCase();
+    if (q.includes('coffee') || q.includes('cafe') || q.includes('espresso') || q.includes('brew'))
+      return 'Mapping pour-over routes through Fontainhas...';
+    if (q.includes('sunset') || q.includes('view') || q.includes('horizon') || q.includes('river'))
+      return 'Calibrating golden-hour vantage points...';
+    if (q.includes('art') || q.includes('gallery') || q.includes('mural') || q.includes('paint'))
+      return 'Cross-referencing local artist studios...';
+    if (q.includes('food') || q.includes('eat') || q.includes('restaurant') || q.includes('goan'))
+      return 'Sniffing out authentic Goan kitchens...';
+    if (q.includes('book') || q.includes('read') || q.includes('library'))
+      return 'Locating quiet reading corners in Panjim...';
+    if (q.includes('quiet') || q.includes('peaceful') || q.includes('alone') || q.includes('calm'))
+      return 'Finding the most unhurried spots in Panaji...';
+    if (q.includes('hidden') || q.includes('secret') || q.includes('local') || q.includes('off'))
+      return 'Consulting local knowledge not on any map...';
+    if (q.includes('heritage') || q.includes('colonial') || q.includes('portuguese') || q.includes('historic'))
+      return 'Tracing colonial corridors of Fontainhas...';
+    if (q.includes('music') || q.includes('bar') || q.includes('night') || q.includes('evening'))
+      return 'Tuning into Panaji\'s after-dark rhythm...';
+    if (q.includes('walk') || q.includes('route') || q.includes('trail') || q.includes('hour'))
+      return 'Plotting your pedestrian traverse...';
+    // Fallback pool — rotates randomly
+    const fallbacks = [
+      'Reading the city\'s quieter frequencies...',
+      'Tracing cobblestone corridors of Fontainhas...',
+      'Consulting the local field notes...',
+      'Mapping low foot-traffic anchors...',
+      'Scanning the Panaji urban matrix...',
+    ];
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  };
+
   const saveSettings = () => {
     try {
       if (userApiKey.trim()) {
@@ -427,6 +467,9 @@ export function TrailChatbot() {
         content: trimmed,
       };
 
+      // Pick a contextual loading message based on the query
+      setLoadingHint(getLoadingHint(trimmed));
+
       const historyForAPI: ChatMessage[] = messages
         .filter((m) => m.role === 'user' || m.role === 'assistant')
         .slice(-8)
@@ -436,7 +479,12 @@ export function TrailChatbot() {
       setInput('');
       setIsLoading(true);
 
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+      const endpoints: string[] = [];
+      if (backendUrl && backendUrl !== 'http://localhost:3000' && !backendUrl.endsWith(':3000')) {
+        endpoints.push(`${backendUrl}/api/chat`);
+      }
+      endpoints.push('/api/chat');
 
       try {
         const headers: Record<string, string> = {
@@ -447,19 +495,30 @@ export function TrailChatbot() {
           headers['x-gemini-api-key'] = userApiKey.trim();
         }
 
-        const res = await fetch(`${backendUrl}/api/chat`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            message: trimmed,
-            history: historyForAPI,
-            apiKey: userApiKey.trim() || undefined,
-            model: selectedModel,
-          }),
-        });
+        let res: Response | null = null;
+        for (const ep of endpoints) {
+          try {
+            const candidate = await fetch(ep, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                message: trimmed,
+                history: historyForAPI,
+                apiKey: userApiKey.trim() || undefined,
+                model: selectedModel,
+              }),
+            });
+            if (candidate.ok) {
+              res = candidate;
+              break;
+            }
+          } catch {
+            // Try next endpoint
+          }
+        }
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+        if (!res || !res.ok) {
+          throw new Error('All chat endpoints failed');
         }
 
         const data: ChatResponse = await res.json();
@@ -590,8 +649,10 @@ export function TrailChatbot() {
                     />
                     <span>
                       {isGeminiActive
-                        ? selectedModel === 'gemini-1.5-pro'
-                          ? '1.5 Pro'
+                        ? selectedModel === 'gemini-2.5-pro'
+                          ? '2.5 Pro'
+                          : selectedModel === 'gemini-2.5-flash'
+                          ? '2.5 Flash'
                           : selectedModel === 'gemini-2.0-flash'
                           ? '2.0 Flash'
                           : '1.5 Flash'
@@ -687,22 +748,28 @@ export function TrailChatbot() {
                       <div className="space-y-1.5">
                         {[
                           {
-                            id: 'gemini-1.5-pro',
-                            name: 'Gemini 1.5 Pro',
-                            badge: 'Strongest Reasoning',
-                            desc: 'Deep local nuance, multi-turn context & superior trail planning.',
+                            id: 'gemini-2.5-flash',
+                            name: 'Gemini 2.5 Flash',
+                            badge: 'Recommended',
+                            desc: 'Best balance of speed and quality. Default choice.',
                           },
                           {
-                            id: 'gemini-2.0-flash',
-                            name: 'Gemini 2.0 Flash',
-                            badge: 'Next-Gen Speed',
-                            desc: 'Ultra-fast inference with next-generation multimodal architecture.',
+                            id: 'gemini-2.5-pro',
+                            name: 'Gemini 2.5 Pro',
+                            badge: 'Most Capable',
+                            desc: 'Deepest reasoning for rich trail narratives. Slightly slower.',
                           },
                           {
-                            id: 'gemini-1.5-flash',
-                            name: 'Gemini 1.5 Flash',
-                            badge: 'Lightweight',
-                            desc: 'Fast, token-efficient responses.',
+                            id: 'gemini-flash-latest',
+                            name: 'Gemini Flash Latest',
+                            badge: 'Fast',
+                            desc: 'Always the newest Flash build. Fast and lightweight.',
+                          },
+                          {
+                            id: 'gemini-pro-latest',
+                            name: 'Gemini Pro Latest',
+                            badge: 'Cutting Edge',
+                            desc: 'Always the newest Pro build.',
                           },
                         ].map((m) => (
                           <button
@@ -842,12 +909,20 @@ export function TrailChatbot() {
                     {isLoading && (
                       <div className="flex justify-start mb-3">
                         <div className="w-6 h-6 rounded-full bg-[#183D2B] flex items-center justify-center flex-shrink-0 mr-2 mt-0.5">
-                          <Sparkles className="w-3 h-3 text-[#F4F2EB]" />
+                          <Sparkles className="w-3 h-3 text-[#E36A2E]" style={{ animation: 'spin 2s linear infinite' }} />
                         </div>
-                        <div className="bg-white/80 border border-[#183D2B]/10 rounded-2xl rounded-bl-sm px-3.5 py-2.5 shadow-sm flex items-center gap-2">
-                          <Loader2 className="w-3.5 h-3.5 text-[#4E6B48] animate-spin" />
-                          <span className="text-xs text-[#183D2B]/60 font-mono">
-                            {selectedModel === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro exploring trails...' : 'Scouting spots...'}
+                        <div className="bg-white/80 border border-[#E36A2E]/20 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
+                          {/* Animated 3-dot pulse */}
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#E36A2E]" style={{ animation: 'pulse 1.2s ease-in-out 0s infinite' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#E36A2E]" style={{ animation: 'pulse 1.2s ease-in-out 0.4s infinite' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#E36A2E]" style={{ animation: 'pulse 1.2s ease-in-out 0.8s infinite' }} />
+                            <span className="text-[10px] font-mono text-[#183D2B]/40 uppercase tracking-wider ml-1">
+                              TRAIL SCOUT ACTIVE
+                            </span>
+                          </div>
+                          <span className="text-xs text-[#183D2B]/70 font-serif italic">
+                            {loadingHint}
                           </span>
                         </div>
                       </div>

@@ -208,17 +208,26 @@ export async function callGeminiAPI(
   userMessage: string,
   history: ChatMessage[],
   customApiKey?: string,
-  preferredModel?: string
+  preferredModel?: string,
+  temperature = 0.7,
+  maxOutputTokens = 600
 ): Promise<GeminiCallResult> {
   const apiKey = (customApiKey || process.env.GEMINI_API_KEY || '').trim();
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY not configured');
   }
 
-  // Model hierarchy: preferred model -> gemini-1.5-pro -> gemini-2.0-flash -> gemini-1.5-flash
-  const requestedModel = preferredModel?.trim() || process.env.GEMINI_MODEL?.trim() || 'gemini-1.5-pro';
+  // Model waterfall — these model IDs are confirmed available via models.list
+  const requestedModel = preferredModel?.trim() || process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
   const candidateModels = Array.from(
-    new Set([requestedModel, 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-1.5-flash'])
+    new Set([
+      requestedModel,
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+      'gemini-flash-latest',
+      'gemini-pro-latest',
+      'gemini-2.5-flash-lite',
+    ])
   );
 
   const contents = history.map((turn) => ({
@@ -232,22 +241,39 @@ export async function callGeminiAPI(
 
   for (const model of candidateModels) {
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
+      // Try v1 first (stable models), fall back to v1beta if 404
+      let apiUrl = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
+      let response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents,
+          generationConfig: {
+            temperature,
+            maxOutputTokens,
+            topP: 0.95,
+          },
+        }),
+      });
+
+      // If v1 returns 404 for this model, retry on v1beta
+      if (response.status === 404) {
+        apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        response = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             system_instruction: { parts: [{ text: systemPrompt }] },
             contents,
             generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 600,
+              temperature,
+              maxOutputTokens,
               topP: 0.95,
             },
           }),
-        }
-      );
+        });
+      }
 
       if (!response.ok) {
         const errText = await response.text();

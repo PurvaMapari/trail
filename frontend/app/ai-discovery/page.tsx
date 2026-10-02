@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FieldDeskFooter } from '@/components/layout/FieldDeskFooter';
 import { AIDiscoveryHeader } from '@/components/ai-discovery/AIDiscoveryHeader';
 import { AIIntentInput } from '@/components/ai-discovery/AIIntentInput';
@@ -15,9 +15,7 @@ import { AlertCircle } from 'lucide-react';
 
 export default function AIDiscoveryPage() {
   // Input State initialized to match the Figma reference
-  const [prompt, setPrompt] = useState(
-    'I have 2 hours, want good coffee, some art and somewhere quiet.'
-  );
+  const [prompt, setPrompt] = useState('');
 
   // Calibration State
   const [calibration, setCalibration] = useState<AICalibrationState>({
@@ -33,38 +31,13 @@ export default function AIDiscoveryPage() {
   const [synthesizedTrail, setSynthesizedTrail] = useState<RichTrail | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Auto-generate on initial load to match the Figma design's full synthesized view
-  useEffect(() => {
-    let isMounted = true;
-    async function initialSynthesis() {
-      try {
-        const trail = await generateTrail({
-          prompt,
-          locus: calibration.locus,
-          timeHours: calibration.timeHours,
-          tags: calibration.tags,
-          maxDistanceKm: calibration.maxDistanceKm,
-        });
-        if (isMounted) {
-          setSynthesizedTrail(trail);
-          setUiState('success');
-        }
-      } catch {
-        if (isMounted) {
-          setUiState('idle');
-        }
-      }
-    }
+  // Note: auto-synthesis on load removed — user triggers generation via "Synthesize" button
+  // to avoid consuming Gemini API quota on every page visit.
 
-    initialSynthesis();
-    return () => {
-      isMounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
-  const handleSynthesize = async () => {
-    if (!prompt.trim()) {
+  const handleSynthesize = async (overridePrompt?: string) => {
+    const activePrompt = overridePrompt ?? prompt;
+    if (!activePrompt.trim()) {
       setErrorMessage('Please enter an expedition prompt or select a seed intent.');
       return;
     }
@@ -74,7 +47,7 @@ export default function AIDiscoveryPage() {
 
     try {
       const trail = await generateTrail({
-        prompt,
+        prompt: activePrompt,
         locus: calibration.locus,
         timeHours: calibration.timeHours,
         tags: calibration.tags,
@@ -88,37 +61,52 @@ export default function AIDiscoveryPage() {
       setTimeout(() => {
         window.scrollTo({ top: 580, behavior: 'smooth' });
       }, 100);
-    } catch {
-      setErrorMessage('Unable to synthesize route. Please verify parameters and retry.');
+    } catch (err) {
+      console.error('[AI Discovery] generateTrail failed:', err);
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Trail synthesis failed. Please check your network and retry.'
+      );
       setUiState('error');
     }
   };
 
   const handleSelectSeed = (seed: string) => {
     setPrompt(seed);
+    setErrorMessage(null);
+
+    // Build updated calibration based on seed keywords
+    let updatedCalibration = calibration;
     if (seed.includes('espresso')) {
-      setCalibration((prev) => ({
-        ...prev,
-        tags: ['Coffee', 'Books', 'Historic Alleys'],
-        timeHours: 2.0,
-      }));
+      updatedCalibration = { ...calibration, tags: ['Coffee', 'Books', 'Historic Alleys'], timeHours: 2.0 };
     } else if (seed.includes('murals')) {
-      setCalibration((prev) => ({
-        ...prev,
-        tags: ['Murals', 'Pottery', 'River Sunset'],
-        timeHours: 2.5,
-      }));
+      updatedCalibration = { ...calibration, tags: ['Murals', 'Pottery', 'River Sunset'], timeHours: 2.5 };
     } else if (seed.includes('courtyard')) {
-      setCalibration((prev) => ({
-        ...prev,
-        tags: ['Courtyards', 'Colonial Heritage', 'Zero Crowds'],
-        timeHours: 2.0,
-      }));
+      updatedCalibration = { ...calibration, tags: ['Courtyards', 'Colonial Heritage', 'Zero Crowds'], timeHours: 2.0 };
     }
+    setCalibration(updatedCalibration);
+
+    // Auto-synthesize immediately with the seed — don't wait for button click
+    setUiState('loading');
+    generateTrail({
+      prompt: seed,
+      locus: updatedCalibration.locus,
+      timeHours: updatedCalibration.timeHours,
+      tags: updatedCalibration.tags,
+      maxDistanceKm: updatedCalibration.maxDistanceKm,
+    }).then((trail) => {
+      setSynthesizedTrail(trail);
+      setUiState('success');
+      setTimeout(() => window.scrollTo({ top: 580, behavior: 'smooth' }), 100);
+    }).catch((err) => {
+      setErrorMessage(err instanceof Error ? err.message : 'Unable to synthesize route. Please retry.');
+      setUiState('error');
+    });
   };
 
   const handleReset = () => {
-    setPrompt('I have 2 hours, want good coffee, some art and somewhere quiet.');
+    setPrompt('');
     setCalibration({
       locus: 'Panaji, Goa',
       locusSub: 'Fontainhas / Latin Quarter Core',
@@ -126,6 +114,8 @@ export default function AIDiscoveryPage() {
       tags: ['Coffee', 'Art', 'Quiet'],
       maxDistanceKm: 5.0,
     });
+    setSynthesizedTrail(null);
+    setUiState('idle');
     setErrorMessage(null);
   };
 
@@ -182,11 +172,31 @@ export default function AIDiscoveryPage() {
 
         {/* Synthesized Trail Result Dossier */}
         {uiState === 'success' && synthesizedTrail && (
-          <AISynthesizedDossier
-            trail={synthesizedTrail}
-            onRegenerate={handleSynthesize}
-            isRegenerating={false}
-          />
+          <>
+            {synthesizedTrail.id === 'ai-quiet-hours-panaji' && (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-300/60 bg-amber-50/80 text-amber-800 text-xs font-mono">
+                <span className="text-amber-500 text-base">⚠</span>
+                <span>
+                  <strong>DEMO MODE</strong> — Gemini API key not configured or invalid.
+                  This is a hardcoded sample trail.{' '}
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-amber-900"
+                  >
+                    Get a free API key →
+                  </a>
+                  {' '}then paste it in <code className="bg-amber-100 px-1 rounded">backend/.env</code> and restart the backend.
+                </span>
+              </div>
+            )}
+            <AISynthesizedDossier
+              trail={synthesizedTrail}
+              onRegenerate={handleSynthesize}
+              isRegenerating={false}
+            />
+          </>
         )}
       </main>
 

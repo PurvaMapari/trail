@@ -16,6 +16,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import chatRouter from './routes/chat';
+import generateTrailRouter from './routes/generateTrail';
 import { curated_spots, getHighlightedSpots } from './data/spots';
 
 // Load environment variables from .env
@@ -31,7 +32,7 @@ app.use(
   cors({
     origin: [FRONTEND_URL, 'http://localhost:3000', 'http://localhost:3001'],
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-gemini-api-key', 'x-gemini-model'],
     credentials: true,
   })
 );
@@ -83,6 +84,9 @@ app.get('/api/config', (_req, res) => {
 // AI Chat endpoint
 app.use('/api/chat', chatRouter);
 
+// AI Trail Generation endpoint
+app.use('/api/generate-trail', generateTrailRouter);
+
 // Full spots dataset
 app.get('/api/spots', (_req, res) => {
   res.json({
@@ -133,6 +137,7 @@ app.listen(PORT, () => {
   console.log(`    GET  http://localhost:${PORT}/health`);
   console.log(`    GET  http://localhost:${PORT}/api/config`);
   console.log(`    POST http://localhost:${PORT}/api/chat`);
+  console.log(`    POST http://localhost:${PORT}/api/generate-trail`);
   console.log(`    GET  http://localhost:${PORT}/api/spots`);
   console.log(`    GET  http://localhost:${PORT}/api/spots/:id`);
   console.log('');
