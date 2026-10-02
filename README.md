@@ -96,6 +96,7 @@ Trail/
 | `/active-trail` | Live trail guidance experience |
 | `/create-trail` | Trail curation & creation workflow |
 | `/ai-discovery` | AI-assisted trail discovery |
+| `/wireframes` | Interactive UI/UX Wireframe Blueprints (TRAIL & WealthNest) |
 
 ---
 

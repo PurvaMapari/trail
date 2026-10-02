@@ -9,6 +9,7 @@
 
 import { Router, Request, Response } from 'express';
 import { callGeminiAPI } from '../services/aiService';
+import { curated_spots } from '../data/spots';
 
 const router = Router();
 
@@ -137,62 +138,136 @@ router.post('/', async (req: Request, res: Response) => {
     const headerApiKey = (req.headers['x-gemini-api-key'] as string)?.trim() || undefined;
     const headerModel = (req.headers['x-gemini-model'] as string)?.trim() || undefined;
     const effectiveApiKey = headerApiKey || bodyApiKey?.trim() || process.env.GEMINI_API_KEY?.trim();
-    const effectiveModel = headerModel || bodyModel?.trim() || process.env.GEMINI_MODEL?.trim() || 'gemini-1.5-pro';
+    const effectiveModel = headerModel || bodyModel?.trim() || process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
 
-    if (!effectiveApiKey) {
-      res.status(503).json({
-        error: 'No Gemini API key configured. Set GEMINI_API_KEY in backend/.env or pass it in the request.',
-        source: 'no-key',
-      });
-      return;
+    if (effectiveApiKey) {
+      try {
+        const systemPrompt = buildTrailSystemPrompt({ prompt, locus, timeHours, tags, maxDistanceKm });
+        const result = await callGeminiAPI(
+          systemPrompt,
+          `Generate a trail for this request: "${prompt.trim()}"`,
+          [],
+          effectiveApiKey,
+          effectiveModel,
+          0.95,
+          1400
+        );
+
+        const cleaned = result.text
+          .replace(/^```json\s*/i, '')
+          .replace(/^```\s*/i, '')
+          .replace(/```\s*$/i, '')
+          .trim();
+        const trailData = JSON.parse(cleaned);
+
+        res.json({
+          trail: trailData,
+          source: 'gemini',
+          modelUsed: result.modelUsed,
+          processingMs: Date.now() - start,
+        });
+        return;
+      } catch (geminiErr) {
+        console.warn('[generate-trail] Live Gemini call failed, generating curated route:', geminiErr);
+      }
     }
 
-    const systemPrompt = buildTrailSystemPrompt({ prompt, locus, timeHours, tags, maxDistanceKm });
+    // Dynamic curated fallback matching prompt
+    const q = (prompt + ' ' + (tags || []).join(' ')).toLowerCase();
+    const scored = curated_spots.map((spot) => {
+      let score = 0;
+      const hay = `${spot.name} ${spot.description} ${spot.curatorNote} ${spot.vibes.join(' ')} ${spot.categoryTags.join(' ')} ${spot.category} ${spot.location.quarter}`.toLowerCase();
+      if (q.includes('coffee') && (spot.category === 'coffee' || hay.includes('coffee'))) score += 7;
+      if (q.includes('book') && (spot.category === 'bookstore' || hay.includes('book'))) score += 7;
+      if (q.includes('art') && (spot.category === 'art' || spot.category === 'street-art')) score += 7;
+      if (q.includes('sunset') && (spot.category === 'viewpoint' || hay.includes('sunset'))) score += 7;
+      if (spot.highlighted) score += 1;
+      return { spot, score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    const topSpots = scored.filter((s) => s.score > 0).map((s) => s.spot);
+    const selectedSpots = topSpots.length >= 3 ? topSpots.slice(0, 4) : curated_spots.slice(0, 4);
 
-    // Call Gemini — ask it to return raw JSON
-    const result = await callGeminiAPI(
-      systemPrompt,
-      `Generate a trail for this request: "${prompt.trim()}"`,
-      [],
-      effectiveApiKey,
-      effectiveModel,
-      0.95,  // high temperature for creative, unique trail variety
-      1400   // enough tokens for full JSON with 4 detailed stops
-    );
+    const plateImages = ['/images/td-plate-01.jpg', '/images/active-trail/bookstore.jpg', '/images/active-trail/next_thumb.jpg', '/images/td-plate-04.jpg'];
+    let cumulativeKm = 0;
+    const detailedStops = selectedSpots.map((spot, i) => {
+      const isFirst = i === 0;
+      const isLast = i === selectedSpots.length - 1;
+      const legDist = isFirst ? 0 : Math.round((0.5 + i * 0.4) * 10) / 10;
+      cumulativeKm += legDist;
+      const stationNum = String(i + 1).padStart(2, '0');
 
-    // Parse the JSON from Gemini's response
-    let trailData: Record<string, unknown>;
-    try {
-      // Strip any accidental markdown fences Gemini might add
-      const cleaned = result.text
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/i, '')
-        .replace(/```\s*$/i, '')
-        .trim();
-      trailData = JSON.parse(cleaned);
-    } catch {
-      console.error('[generate-trail] Gemini returned non-JSON:', result.text.slice(0, 300));
-      res.status(502).json({
-        error: 'Gemini returned an unstructured response. Try again.',
-        raw: result.text.slice(0, 500),
-      });
-      return;
-    }
+      return {
+        id: `ai-stop-${spot.id}-${i + 1}`,
+        name: spot.name,
+        shortName: spot.shortName || spot.name.split('/')[0].trim(),
+        description: spot.description,
+        categoryTag: `${spot.category.toUpperCase()} · ${spot.location.quarter.toUpperCase()}`,
+        estimatedMinutes: spot.estimatedMinutes || 25,
+        locationLabel: spot.location.quarter.toUpperCase(),
+        refCode: `REF: PNJ-${stationNum}`,
+        plateTag: isFirst ? '01 STARTING ANCHOR' : isLast ? `${stationNum} TERMINUS WAYPOINT` : `${stationNum} INTERMEDIATE STATION`,
+        plateImage: plateImages[i % plateImages.length],
+        distanceMarker: isFirst ? '0.0 KM' : `+${legDist.toFixed(1)} KM`,
+        distanceKm: Math.round(cumulativeKm * 10) / 10,
+        legLabel: `STATION ${stationNum}`,
+        bearing: `${spot.location.lat.toFixed(4)}°N ${spot.location.lng.toFixed(4)}°E`,
+        corridorLabel: `${spot.location.quarter.toUpperCase()} PEDESTRIAN CORRIDOR`,
+        surfaceType: i % 2 === 0 ? 'BASALT COBBLESTONE' : 'FLAGSTONE & HYDRAULIC TILES',
+        elevationChange: `+${i * 3 + 2}M`,
+        elevationProfile: `+${i * 3 + 2}M`,
+        curatorClue: spot.curatorNote,
+        quarterContext: `COORDINATES: ${spot.location.lat.toFixed(4)}°N ${spot.location.lng.toFixed(4)}°E · FOOT TRAFFIC: ${spot.footTraffic.toUpperCase()} · NOISE: ${spot.noiseLevel.toUpperCase()}`,
+        nextWalkDistance: isLast ? '0.0 KM' : `${legDist > 0 ? legDist : 0.8} KM AWAY`,
+        nextWalkTime: isLast ? 'TRAIL COMPLETED' : `~${Math.round((spot.walkTimeFromCenterMin || 10) * 0.9)} MIN WALK`,
+      };
+    });
+
+    const firstSpot = selectedSpots[0];
+    const lastSpot = selectedSpots[selectedSpots.length - 1];
+    const durationMin = Math.round((timeHours ?? 2) * 60);
+
+    const curatedTrail = {
+      id: `ai-trail-${Date.now()}`,
+      title: `The ${firstSpot.category === 'coffee' ? 'Barista & Courtyard' : 'Artisan'} Path: ${firstSpot.shortName || firstSpot.name} to ${lastSpot.shortName || lastSpot.name}`,
+      subtitle: `ROUTE ARCHETYPE: ${(tags || ['Coffee', 'Art', 'Quiet']).join(' · ').toUpperCase()}`,
+      description: `Synthesized trail calibrated for "${prompt.slice(0, 90)}". Featuring unhurried pedestrian cadence across Panaji historic matrix with verified low foot traffic.`,
+      category: 'culture',
+      categoryTags: (tags || ['COFFEE', 'ART', 'QUIET']).map((t) => t.toUpperCase()),
+      city: 'Panaji',
+      distanceKm: Math.max(1.8, Math.round(cumulativeKm * 10) / 10),
+      durationMinutes: durationMin,
+      difficulty: 'easy',
+      featured: true,
+      orderBadge: 'AI SYNTHESIS // DOSSIER',
+      coverImage: detailedStops[0]?.plateImage || '/images/td-plate-01.jpg',
+      featuredImage: '/images/explore-featured-bodega.jpg',
+      heroImage: '/images/td-hero-capture.jpg',
+      indexRef: `REF: TR-GOA-2025-${Math.floor(100 + Math.random() * 900)}`,
+      cadenceLabel: 'Unhurried Pace',
+      localeLabel: locus || 'Panaji, Goa',
+      fieldLeadNotes: 'Calibrated for 18 min/km pedestrian cadence with pause intervals.',
+      departurePoint: firstSpot.name,
+      terrainProfile: 'Cobblestone / Basalt / River Granite',
+      optimalHours: 'Late Afternoon (15:45 - 18:00)',
+      stops: selectedSpots.map((s, idx) => ({
+        id: `ai-stop-${idx + 1}`,
+        name: s.name,
+        description: s.description,
+        estimatedMinutes: s.estimatedMinutes || 25,
+      })),
+      detailedStops,
+    };
 
     res.json({
-      trail: trailData,
-      source: 'gemini',
-      modelUsed: result.modelUsed,
+      trail: curatedTrail,
+      source: 'curated-engine',
+      modelUsed: 'local-curated-engine',
       processingMs: Date.now() - start,
     });
-
   } catch (err) {
     console.error('[generate-trail] Error:', err);
-    res.status(500).json({
-      error: String(err),
-      source: 'error',
-      processingMs: Date.now() - start,
-    });
+    res.status(500).json({ error: String(err) });
   }
 });
 

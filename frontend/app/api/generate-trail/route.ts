@@ -256,7 +256,10 @@ For the last stop set nextWalkDistance to "0.0 KM" and nextWalkTime to "TRAIL CO
 
   for (const model of Array.from(new Set(models))) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -274,10 +277,12 @@ For the last stop set nextWalkDistance to "0.0 KM" and nextWalkTime to "TRAIL CO
             topP: 0.95,
           },
         }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (!res.ok) {
-        const errText = await res.text();
+        const errText = await res.text().catch(() => '');
         throw new Error(`Gemini ${model} HTTP ${res.status}: ${errText}`);
       }
 
