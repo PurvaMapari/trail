@@ -216,7 +216,7 @@ export function AICalibrationCard({
 
           <button
             type="button"
-            onClick={onSynthesize}
+            onClick={() => onSynthesize()}
             disabled={isLoading}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#183D2B] hover:bg-[#183D2B]/90 disabled:opacity-50 text-[#FAF8F3] text-xs font-mono font-bold tracking-wider uppercase transition-all shadow-sm cursor-pointer"
           >

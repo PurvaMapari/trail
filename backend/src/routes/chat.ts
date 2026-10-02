@@ -8,12 +8,14 @@
 import { Router, Request, Response } from 'express';
 import { ChatRequest, ChatResponse } from '../types/chat';
 import {
-  getRelevantSpots,
-  buildSystemPrompt,
+  extractConversationContext,
+  getRelevantSpotsWithContext,
+  buildSystemPromptWithContext,
   callGeminiAPI,
-  generateFallbackResponse,
+  generateIntelligentFallback,
   parseSpotCards,
-  generateFollowUps,
+  generateContextualFollowUps,
+  cleanChatResponse,
 } from '../services/aiService';
 
 const router = Router();
@@ -30,7 +32,7 @@ router.post('/', async (req: Request, res: Response) => {
   const start = Date.now();
 
   try {
-    const { message, history = [], maxWalkMinutes, apiKey: bodyApiKey, model: bodyModel }: ChatRequest = req.body;
+    const { message, history = [], apiKey: bodyApiKey, model: bodyModel }: ChatRequest = req.body;
 
     // Validate input
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -48,19 +50,23 @@ router.post('/', async (req: Request, res: Response) => {
     const headerModel = (req.headers['x-gemini-model'] as string)?.trim() || undefined;
 
     const effectiveApiKey = headerApiKey || bodyApiKey?.trim() || process.env.GEMINI_API_KEY?.trim();
-    const effectiveModel = headerModel || bodyModel?.trim() || process.env.GEMINI_MODEL?.trim() || 'gemini-1.5-pro';
+    const effectiveModel = headerModel || bodyModel?.trim() || process.env.GEMINI_MODEL?.trim() || 'gemini-3.6-flash';
 
-    // Step 1: Retrieve relevant spots
-    const relevantSpots = getRelevantSpots(message, maxWalkMinutes, 5);
+    // Step 1: Extract conversation memory and intent across turns
+    const context = extractConversationContext(history, message);
 
-    // Step 2: Build system prompt
-    const systemPrompt = buildSystemPrompt(relevantSpots);
+    // Step 2: Retrieve spots conditioned on context and intent (scaled for full-duration itineraries)
+    const maxResults = context.durationMinutes >= 180 ? 8 : (context.durationMinutes >= 120 ? 6 : 5);
+    const relevantSpots = getRelevantSpotsWithContext(context, maxResults);
+
+    // Step 3: Build contextual system prompt
+    const systemPrompt = buildSystemPromptWithContext(context, relevantSpots);
 
     let aiText: string;
     let source: 'gemini' | 'fallback' = 'fallback';
     let modelUsed = 'local-curated-engine';
 
-    // Step 3: Call Gemini if key available, else use smart fallback
+    // Step 4: Call Gemini if key available, else use intelligent fallback
     if (effectiveApiKey) {
       try {
         const result = await callGeminiAPI(systemPrompt, message, history.slice(-8), effectiveApiKey, effectiveModel);
@@ -68,20 +74,21 @@ router.post('/', async (req: Request, res: Response) => {
         source = 'gemini';
         modelUsed = result.modelUsed;
       } catch (err) {
-        console.warn('[TRAIL Scout] Gemini call failed, using fallback engine:', (err as Error).message);
-        aiText = generateFallbackResponse(message, relevantSpots);
+        console.warn('[TRAIL Scout] Gemini call failed, using intelligent fallback:', (err as Error).message);
+        aiText = generateIntelligentFallback(context, relevantSpots);
       }
     } else {
       // Offline / zero-dependency local intelligence mode
-      aiText = generateFallbackResponse(message, relevantSpots);
+      aiText = generateIntelligentFallback(context, relevantSpots);
     }
 
-    // Step 4: Parse spot cards + follow-ups
+    // Step 5: Parse spot cards + follow-ups
     const spotCards = parseSpotCards(aiText, relevantSpots);
-    const suggestedFollowUps = generateFollowUps(relevantSpots, message);
+    const suggestedFollowUps = generateContextualFollowUps(context, spotCards.map((c) => c.spot));
+    const cleanedMessage = cleanChatResponse(aiText);
 
     res.json({
-      message: aiText,
+      message: cleanedMessage,
       spotCards,
       suggestedFollowUps,
       source,

@@ -278,7 +278,7 @@ export function AISynthesizedDossier({
           <div className="flex items-center gap-2.5 self-start sm:self-auto">
             <button
               type="button"
-              onClick={onRegenerate}
+              onClick={() => onRegenerate()}
               disabled={isRegenerating}
               className="inline-flex items-center gap-1.5 px-3.5 py-3 rounded-xl border border-[#183D2B]/20 text-[#183D2B] hover:bg-[#183D2B]/5 text-xs font-mono font-semibold tracking-wider uppercase transition-all cursor-pointer"
             >

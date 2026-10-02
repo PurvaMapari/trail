@@ -322,6 +322,7 @@ export default function ExplorePage() {
               src="/images/explore-featured-bodega.jpg"
               alt="Café Bodega, Panaji"
               fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"
               priority
             />

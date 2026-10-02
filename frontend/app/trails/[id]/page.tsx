@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, use } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -25,28 +25,31 @@ export default function TrailDetailsPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const id = resolvedParams.id;
 
-  // Resolve trail from mock data or custom generated trail via lazy initial state
-  const [trail] = useState<RichTrail | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored =
-          window.sessionStorage.getItem('trail_' + id) ||
-          (id.startsWith('custom') ? window.sessionStorage.getItem('last_custom_trail') : null);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.title) {
-            return parsed;
-          }
+  // Resolve trail from mock data first (deterministic on both SSR and initial client hydration)
+  const initialTrail = mockTrails.find((t) => t.id === id) || (id === 'demo' ? mockTrails[0] : null);
+  const [trail, setTrail] = useState<RichTrail | null>(initialTrail);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    // On client mount, check sessionStorage for custom or AI-generated trails
+    try {
+      const stored =
+        window.sessionStorage.getItem('trail_' + id) ||
+        (id.startsWith('custom') || id.startsWith('ai-trail')
+          ? window.sessionStorage.getItem('last_custom_trail')
+          : null);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.title) {
+          setTrail(parsed);
+          return;
         }
-      } catch (e) {
-        console.error(e);
       }
+    } catch (e) {
+      console.error(e);
     }
-    const found = mockTrails.find((t) => t.id === id);
-    if (found) return found;
-    if (id === 'demo') return mockTrails[0];
-    return null;
-  });
+  }, [id]);
 
   // Interactive UI states
   const [isSaved, setIsSaved] = useState(false);
@@ -54,7 +57,19 @@ export default function TrailDetailsPage({ params }: PageProps) {
   const [isOfflineDownloaded, setIsOfflineDownloaded] = useState(false);
   const [activeStationIndex, setActiveStationIndex] = useState(0);
 
-  // If trail not found in registry, show sensible Not Found state
+  // While mounting client-side for dynamic/custom trails not in static registry, show matching loading state
+  if (!isMounted && !trail) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center max-w-xl mx-auto space-y-4">
+        <div className="w-12 h-12 rounded-full border-2 border-[#183D2B]/20 border-t-[#E36A2E] animate-spin" />
+        <p className="text-xs font-mono uppercase tracking-wider text-[#183D2B]/60">
+          Resolving Trail Ledger...
+        </p>
+      </div>
+    );
+  }
+
+  // If trail not found in registry after client mount, show sensible Not Found state
   if (!trail) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center max-w-xl mx-auto space-y-6">
@@ -307,6 +322,7 @@ export default function TrailDetailsPage({ params }: PageProps) {
                   src={trail.heroImage || trail.featuredImage || '/images/td-hero-capture.jpg'}
                   alt={trail.title}
                   fill
+                  sizes="(max-width: 1024px) 100vw, 42vw"
                   className="object-cover"
                   priority
                 />
@@ -501,6 +517,7 @@ export default function TrailDetailsPage({ params }: PageProps) {
                     src={stop.plateImage || `/images/td-plate-0${index + 1}.jpg`}
                     alt={stop.name}
                     fill
+                    sizes="(max-width: 1024px) 100vw, 42vw"
                     className="object-cover"
                   />
                   <div className="absolute top-3 left-3 bg-[#183D2B]/90 text-white px-2.5 py-1 rounded text-[9px] font-mono font-bold uppercase tracking-wider">
@@ -777,6 +794,7 @@ export default function TrailDetailsPage({ params }: PageProps) {
                     src={item.coverImage}
                     alt={item.title}
                     fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 )}

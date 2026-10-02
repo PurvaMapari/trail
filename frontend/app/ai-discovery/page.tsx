@@ -35,9 +35,13 @@ export default function AIDiscoveryPage() {
   // to avoid consuming Gemini API quota on every page visit.
 
 
-  const handleSynthesize = async (overridePrompt?: string) => {
-    const activePrompt = overridePrompt ?? prompt;
-    if (!activePrompt.trim()) {
+  const handleSynthesize = async (overridePrompt?: unknown) => {
+    const activePrompt =
+      typeof overridePrompt === 'string' && overridePrompt.trim().length > 0
+        ? overridePrompt
+        : prompt;
+
+    if (!activePrompt || typeof activePrompt !== 'string' || !activePrompt.trim()) {
       setErrorMessage('Please enter an expedition prompt or select a seed intent.');
       return;
     }
@@ -141,7 +145,7 @@ export default function AIDiscoveryPage() {
             setPrompt(val);
             setErrorMessage(null);
           }}
-          onSubmit={handleSynthesize}
+          onSubmit={() => handleSynthesize()}
           onSelectSeed={handleSelectSeed}
           isLoading={uiState === 'loading'}
         />
@@ -151,7 +155,7 @@ export default function AIDiscoveryPage() {
           calibration={calibration}
           onChange={(updates) => setCalibration((prev) => ({ ...prev, ...updates }))}
           onReset={handleReset}
-          onSynthesize={handleSynthesize}
+          onSynthesize={() => handleSynthesize()}
           isLoading={uiState === 'loading'}
         />
 
@@ -193,7 +197,7 @@ export default function AIDiscoveryPage() {
             )}
             <AISynthesizedDossier
               trail={synthesizedTrail}
-              onRegenerate={handleSynthesize}
+              onRegenerate={() => handleSynthesize()}
               isRegenerating={false}
             />
           </>

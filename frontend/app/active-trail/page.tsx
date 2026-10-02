@@ -68,25 +68,27 @@ function ActiveTrailContent() {
   const searchParams = useSearchParams();
   const trailId = searchParams.get('trail') || 'hidden-cafes-panaji';
 
-  // Find trail from mock data or custom session storage via lazy initial state
-  const [trail] = useState<RichTrail>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored =
-          window.sessionStorage.getItem('trail_' + trailId) ||
-          (trailId.startsWith('custom') ? window.sessionStorage.getItem('last_custom_trail') : null);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.title) {
-            return parsed;
-          }
+  // Find trail from mock data (deterministic SSR) and hydrate custom trails in useEffect
+  const initialTrail = mockTrails.find((t) => t.id === trailId) || mockTrails[0];
+  const [trail, setTrail] = useState<RichTrail>(initialTrail);
+
+  useEffect(() => {
+    try {
+      const stored =
+        window.sessionStorage.getItem('trail_' + trailId) ||
+        (trailId.startsWith('custom') || trailId.startsWith('ai-trail')
+          ? window.sessionStorage.getItem('last_custom_trail')
+          : null);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.title) {
+          setTrail(parsed);
         }
-      } catch (e) {
-        console.error(e);
       }
+    } catch (e) {
+      console.error(e);
     }
-    return mockTrails.find((t) => t.id === trailId) || mockTrails[0];
-  });
+  }, [trailId]);
 
   // Get active stops
   const stops: DetailedStop[] = getTrailStops(trail);

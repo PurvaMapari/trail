@@ -236,13 +236,6 @@ function MessageBubble({ msg, spotCards, followUps, onFollowUp, source, modelUse
     });
   };
 
-  const formatModelLabel = (model?: string) => {
-    if (!model) return 'Gemini 1.5 Pro';
-    if (model === 'gemini-1.5-pro') return 'Gemini 1.5 Pro';
-    if (model === 'gemini-2.0-flash') return 'Gemini 2.0 Flash';
-    if (model === 'gemini-1.5-flash') return 'Gemini 1.5 Flash';
-    return model;
-  };
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
@@ -292,19 +285,10 @@ function MessageBubble({ msg, spotCards, followUps, onFollowUp, source, modelUse
         )}
 
         {/* Source badge */}
-        {!isUser && effectiveSource && (
+        {!isUser && (
           <div className="flex items-center gap-1.5 text-[9px] font-mono text-[#183D2B]/45 mt-0.5">
-            {effectiveSource === 'gemini' ? (
-              <>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>✦ {formatModelLabel(effectiveModel)}</span>
-              </>
-            ) : (
-              <>
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                <span>✦ TRAIL Scout Local Guide</span>
-              </>
-            )}
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
+            <span>✦ TRAIL Scout Local Guide</span>
           </div>
         )}
       </div>
@@ -479,7 +463,7 @@ export function TrailChatbot() {
       setInput('');
       setIsLoading(true);
 
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
       const endpoints: string[] = [];
       if (backendUrl && backendUrl !== 'http://localhost:3000' && !backendUrl.endsWith(':3000')) {
         endpoints.push(`${backendUrl}/api/chat`);
@@ -537,40 +521,74 @@ export function TrailChatbot() {
       } catch (err) {
         console.warn('[TRAIL Scout Frontend] Backend call failed, using client fallback:', err);
 
-        // Client-side emergency fallback: find a matching spot from curated dataset
+        // Client-side emergency fallback: find matching spots while avoiding previously mentioned ones
         const lower = trimmed.toLowerCase();
-        const matched = curated_spots.find(
-          (s) =>
-            lower.includes(s.name.toLowerCase()) ||
-            lower.includes(s.category) ||
-            s.vibes.some((v) => lower.includes(v.toLowerCase()))
-        ) || curated_spots[0];
+        const pastText = messages.map((m) => m.content.toLowerCase()).join(' ');
 
-        const secondMatched = curated_spots.find((s) => s.id !== matched.id && s.category === matched.category) || curated_spots[1];
+        // Check if query is about the platform itself
+        if (lower.includes('trail') || lower.includes('website') || lower.includes('create') || lower.includes('explore')) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'assistant',
+              content:
+                `**TRAIL** connects you to Panaji's quietest roasteries, tucked-away courtyards, and scenic lookouts through curated routes like **Hidden Cafés of Panaji** and **Old Streets & Stories**.\n\nYou can browse curated walking routes on **Explore Trails** (/explore), plan custom waypoints in **Create Trail** (/create-trail), or use **AI Discovery** to synthesize a bespoke walking dossier.`,
+              source: 'fallback',
+              modelUsed: 'local-curated-engine',
+            },
+          ]);
+        } else {
+          const candidates = curated_spots.filter(
+            (s) =>
+              lower.includes(s.name.toLowerCase()) ||
+              lower.includes(s.category) ||
+              s.vibes.some((v) => lower.includes(v.toLowerCase())) ||
+              s.categoryTags.some((t) => lower.includes(t.toLowerCase()))
+          );
 
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: `I know just the place: **${matched.name}** in ${matched.location.quarter}.\n\n>> ${matched.name}\n${matched.description.split('.')[0]}. ${matched.curatorNote}\n\n*(Note: Running offline. Start backend with 'cd backend && npm run dev' or configure your API key in Settings ⚙️ for live Gemini responses).*`,
-            spotCards: [
-              {
-                spot: matched,
-                matchReason: matched.curatorNote || 'Recommended based on your query.',
-                relevanceScore: 0.9,
-                action: 'add-to-trail',
-              },
-              {
-                spot: secondMatched,
-                matchReason: secondMatched.curatorNote || 'Alternative local spot.',
-                relevanceScore: 0.75,
-                action: 'add-to-trail',
-              },
-            ],
-            source: 'fallback',
-            modelUsed: 'local-curated-engine',
-          },
-        ]);
+          // Filter out already mentioned spots if possible
+          const unmentionedCandidates = candidates.filter(
+            (s) => !pastText.includes(s.name.toLowerCase())
+          );
+          const poolToPick = unmentionedCandidates.length > 0 ? unmentionedCandidates : candidates.length > 0 ? candidates : curated_spots;
+          
+          // Randomize pick from pool for variety
+          const matched = poolToPick[Math.floor(Math.random() * poolToPick.length)] || curated_spots[0];
+          const secondMatched =
+            poolToPick.find((s) => s.id !== matched.id) ||
+            curated_spots.find((s) => s.id !== matched.id) ||
+            curated_spots[1];
+
+          const openers = [
+            `If you're asking me, head towards **${matched.name}** in ${matched.location.quarter}.\n\n>> ${matched.name}\n${matched.description.split('.')[0]}. ${matched.curatorNote}`,
+            `Tucked into the lanes of ${matched.location.quarter}, **${matched.name}** is a lovely match.\n\n>> ${matched.name}\n${matched.description.split('.')[0]}. Local tip: ${matched.curatorNote}`,
+          ];
+          const chosenText = openers[Math.floor(Math.random() * openers.length)];
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: `${chosenText}\n\n*(Note: Running local curated mode. For live Gemini responses, verify your API key in Settings ⚙️).*`,
+              spotCards: [
+                {
+                  spot: matched,
+                  matchReason: matched.curatorNote || 'Recommended based on your query.',
+                  relevanceScore: 0.9,
+                  action: 'add-to-trail',
+                },
+                {
+                  spot: secondMatched,
+                  matchReason: secondMatched.curatorNote || 'Alternative local spot.',
+                  relevanceScore: 0.75,
+                  action: 'add-to-trail',
+                },
+              ],
+              source: 'fallback',
+              modelUsed: 'local-curated-engine',
+            },
+          ]);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -644,24 +662,14 @@ export function TrailChatbot() {
                   >
                     <span
                       className={`w-1.5 h-1.5 rounded-full ${
-                        isGeminiActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
+                        backendOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
                       }`}
                     />
-                    <span>
-                      {isGeminiActive
-                        ? selectedModel === 'gemini-2.5-pro'
-                          ? '2.5 Pro'
-                          : selectedModel === 'gemini-2.5-flash'
-                          ? '2.5 Flash'
-                          : selectedModel === 'gemini-2.0-flash'
-                          ? '2.0 Flash'
-                          : '1.5 Flash'
-                        : 'Local'}
-                    </span>
+                    <span>{backendOnline ? 'Active' : 'Offline'}</span>
                   </button>
                 </div>
                 <p className="text-[9px] font-mono text-[#F4F2EB]/50 uppercase tracking-wider">
-                  Panaji Guide · {backendOnline ? 'Backend Online' : 'Offline Mode'}
+                  Panaji Guide · Field Verified
                 </p>
               </div>
             </div>
@@ -675,7 +683,7 @@ export function TrailChatbot() {
                     : 'text-[#F4F2EB]/70 hover:text-[#F4F2EB] hover:bg-white/10'
                 }`}
                 aria-label="Settings"
-                title="Configure Gemini API Key & Model"
+                title="Configure Scout Settings"
               >
                 <Settings2 className="w-3.5 h-3.5" />
               </button>
@@ -707,7 +715,7 @@ export function TrailChatbot() {
                       <div className="flex items-center gap-2">
                         <KeyRound className="w-4 h-4 text-[#E36A2E]" />
                         <h4 className="text-xs font-semibold tracking-wide uppercase font-mono">
-                          AI Engine Settings
+                          Scout Guide Settings
                         </h4>
                       </div>
                       <button
@@ -733,43 +741,43 @@ export function TrailChatbot() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between font-mono text-[10px]">
-                        <span className="text-[#183D2B]/60">Active Model:</span>
+                        <span className="text-[#183D2B]/60">Engine:</span>
                         <span className="font-semibold text-[#183D2B]">
-                          {selectedModel === 'gemini-1.5-pro' ? 'Gemini 1.5 Pro' : selectedModel}
+                          TRAIL Scout Intelligent Guide
                         </span>
                       </div>
                     </div>
 
-                    {/* Model Selector */}
+                    {/* Persona Selector */}
                     <div>
                       <label className="block text-[10px] font-mono uppercase tracking-wider text-[#183D2B]/70 mb-1.5">
-                        Gemini Reasoning Agent
+                        Scout Exploration Persona
                       </label>
                       <div className="space-y-1.5">
                         {[
                           {
-                            id: 'gemini-2.5-flash',
-                            name: 'Gemini 2.5 Flash',
-                            badge: 'Recommended',
-                            desc: 'Best balance of speed and quality. Default choice.',
+                            id: 'gemini-3.6-flash',
+                            name: 'Balanced Explorer',
+                            badge: 'Default',
+                            desc: 'Optimal balance of local knowledge and quick routing.',
                           },
                           {
-                            id: 'gemini-2.5-pro',
-                            name: 'Gemini 2.5 Pro',
-                            badge: 'Most Capable',
-                            desc: 'Deepest reasoning for rich trail narratives. Slightly slower.',
+                            id: 'gemini-3.5-flash',
+                            name: 'Deep Discovery',
+                            badge: 'In-Depth',
+                            desc: 'Deep historical narratives and multi-station itineraries.',
+                          },
+                          {
+                            id: 'gemini-3.1-flash-lite',
+                            name: 'Expedited Walk',
+                            badge: 'Fast',
+                            desc: 'Quick, essential stops and immediate walkability guidance.',
                           },
                           {
                             id: 'gemini-flash-latest',
-                            name: 'Gemini Flash Latest',
-                            badge: 'Fast',
-                            desc: 'Always the newest Flash build. Fast and lightweight.',
-                          },
-                          {
-                            id: 'gemini-pro-latest',
-                            name: 'Gemini Pro Latest',
-                            badge: 'Cutting Edge',
-                            desc: 'Always the newest Pro build.',
+                            name: 'Comprehensive Scout',
+                            badge: 'Complete',
+                            desc: 'Rich neighborhood exploration and secluded alleys.',
                           },
                         ].map((m) => (
                           <button
@@ -804,7 +812,7 @@ export function TrailChatbot() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-[10px] font-mono uppercase tracking-wider text-[#183D2B]/70">
-                          Google Gemini API Key
+                          Personal AI Access Key (Optional)
                         </label>
                         <a
                           href="https://aistudio.google.com/app/apikey"

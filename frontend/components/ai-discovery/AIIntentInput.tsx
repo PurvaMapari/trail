@@ -47,7 +47,7 @@ export function AIIntentInput({
 
         <button
           type="button"
-          onClick={onSubmit}
+          onClick={() => onSubmit()}
           disabled={isLoading}
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#ECE8DD] hover:bg-[#183D2B] hover:text-[#FAF8F3] text-[#183D2B] font-mono text-[10px] font-bold tracking-wider transition-all disabled:opacity-40 cursor-pointer"
         >
