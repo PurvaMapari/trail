@@ -1,141 +1,138 @@
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { ArrowRight } from 'lucide-react';
+'use client';
 
-interface TraverseCard {
-  id: string;
-  badge: string;
-  category: string;
-  title: string;
-  desc: string;
-  image: string;
-  distance: string;
-  duration: string;
-  difficulty: string;
+import React from 'react';
+import { Star, MessageSquareQuote, CheckCircle, Users } from 'lucide-react';
+
+interface Testimonial {
+  quote: string;
+  author: string;
+  role: string;
+  trailTested: string;
 }
 
-const traverses: TraverseCard[] = [
+const betaReviews: Testimonial[] = [
   {
-    id: 'marin-ocean',
-    badge: 'SAN FRANCISCO // PACIFIC OVERLOOK',
-    category: 'COASTAL MARITIME // SF',
-    title: 'The Marin to Ocean Traverse',
-    desc: 'Connecting three heritage bakeries, a 1920s naval lookout, and eucalyptus fog glades.',
-    image: '/images/traverse-marin.png',
-    distance: '14.2 KM',
-    duration: '4H 15M',
-    difficulty: 'MODERATE',
+    quote:
+      'I have lived in Panaji for six years and walked past Café Bodega dozens of times without knowing the courtyard history behind it. TRAIL made an ordinary Sunday morning feel like a curated expedition.',
+    author: 'Maya S.',
+    role: 'Panaji Local & Architect',
+    trailTested: 'Hidden Cafés of Panaji',
   },
   {
-    id: 'larchwood-babylon',
-    badge: 'HUDSON VALLEY // BEACON RIDGE',
-    category: 'HISTORIC RIDGE // NY',
-    title: 'The High Larchwood Babylon',
-    desc: 'A scenic railway traverse linking antique printmakers, cider press barns, and high granite ledges.',
-    image: '/images/traverse-larchwood.png',
-    distance: '9.8 KM',
-    duration: '3H 00M',
-    difficulty: 'EASY',
+    quote:
+      'Most navigation apps get you lost in narrow Latin Quarter stairways or steer you onto noisy roads. The walking cadence and shade notes here are spot on.',
+    author: 'Vikram R.',
+    role: 'Heritage Walk Lead',
+    trailTested: 'Fontainhas Latin Quarter',
   },
   {
-    id: 'potters-canal',
-    badge: 'PACIFIC NORTHWEST // CASCADIA',
-    category: 'FOREST CANAL // WA',
-    title: "The Potter's Canal Meander",
-    desc: 'Hand-thrown pottery kilns, moss-draped boardwalks, and a rain-sheltered cedar reading room.',
-    image: '/images/traverse-potter.png',
-    distance: '7.6 KM',
-    duration: '2H 30M',
-    difficulty: 'EASY',
+    quote:
+      'Used TRAIL Scout to find a quiet reading spot with single-origin coffee. It suggested a hidden corner near Altinho that Google Maps never showed me.',
+    author: 'Elena K.',
+    role: 'Slow Travel Writer',
+    trailTested: 'Altinho Hilltop & Vistas',
   },
 ];
 
 export function SocialProof() {
   return (
-    <section id="traverses" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-[#183D2B]/10 scroll-mt-20">
-      {/* Top Tag & Header */}
-      <div className="flex flex-wrap items-center justify-between text-xs font-mono uppercase tracking-wider text-[#183D2B]/60 mb-6">
-        <span>04 // FIELD CURATED EXPEDITIONS</span>
-        <Link
-          href="/explore"
-          className="text-[#E36A2E] hover:underline flex items-center gap-1 font-semibold"
-        >
-          <span>VIEW ALL 42 TRAILS</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
-      <div className="mb-10">
-        <h2 className="font-serif text-3xl sm:text-4xl lg:text-[44px] leading-tight font-bold text-[#183D2B]">
-          Featured Connected Traverses
+    <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full border-t border-[#183D2B]/10">
+      {/* Top Banner & Pilot Metrics */}
+      <div className="text-center max-w-2xl mx-auto mb-12">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#183D2B]/5 border border-[#183D2B]/10 text-xs font-mono text-[#183D2B] mb-3">
+          <Users className="w-3.5 h-3.5 text-[#E36A2E]" />
+          <span>Panaji Pilot · Beta Community Data</span>
+        </div>
+        <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#183D2B]">
+          Tested on Foot by Early Explorers
         </h2>
+        <p className="mt-2 text-sm text-[#183D2B]/75 font-sans">
+          Real feedback and field data collected from our ongoing Panaji community pilot walks.
+        </p>
       </div>
 
-      {/* 3 Traverses Cards */}
-      <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
-        {traverses.map((card) => (
+      {/* Platform Pilot Statistics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-12">
+        <div className="rounded-2xl border border-[#183D2B]/15 bg-white p-5 text-center shadow-sm">
+          <span className="block font-mono text-2xl sm:text-3xl font-bold text-[#183D2B]">24+</span>
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#183D2B]/60 mt-1 block">
+            Curated Spots
+          </span>
+          <span className="text-[10px] text-[#4E6B48] font-mono mt-0.5 block">Panaji Historic Core</span>
+        </div>
+
+        <div className="rounded-2xl border border-[#183D2B]/15 bg-white p-5 text-center shadow-sm">
+          <span className="block font-mono text-2xl sm:text-3xl font-bold text-[#183D2B]">100%</span>
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#183D2B]/60 mt-1 block">
+            Foot-Verified
+          </span>
+          <span className="text-[10px] text-[#4E6B48] font-mono mt-0.5 block">Zero Sponsored Spots</span>
+        </div>
+
+        <div className="rounded-2xl border border-[#183D2B]/15 bg-white p-5 text-center shadow-sm">
+          <span className="block font-mono text-2xl sm:text-3xl font-bold text-[#183D2B]">4</span>
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#183D2B]/60 mt-1 block">
+            Living Quarters
+          </span>
+          <span className="text-[10px] text-[#4E6B48] font-mono mt-0.5 block">Latin, Riverside, Hilltop</span>
+        </div>
+
+        <div className="rounded-2xl border border-[#183D2B]/15 bg-white p-5 text-center shadow-sm">
+          <span className="block font-mono text-2xl sm:text-3xl font-bold text-[#E36A2E]">4.9 / 5</span>
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#183D2B]/60 mt-1 block">
+            Beta Walker Rating
+          </span>
+          <span className="text-[10px] text-[#4E6B48] font-mono mt-0.5 block">Pilot Cohort 01</span>
+        </div>
+      </div>
+
+      {/* Early Tester Reviews Grid */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {betaReviews.map((item, idx) => (
           <div
-            key={card.id}
-            className="rounded-2xl border border-[#183D2B]/20 bg-white/80 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
+            key={idx}
+            className="rounded-3xl border border-[#183D2B]/15 bg-white/80 p-6 sm:p-7 shadow-sm flex flex-col justify-between"
           >
-            {/* Card Image Banner */}
-            <div className="relative w-full h-48 bg-[#E7E3D7] overflow-hidden">
-              <Image
-                src={card.image}
-                alt={card.title}
-                fill
-                sizes="(max-width: 768px) 100vw, 33vw"
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
-              <div className="absolute top-3 left-3 bg-[#FAF8F3]/90 backdrop-blur-sm border border-[#183D2B]/20 rounded px-2.5 py-1 text-[9px] font-mono font-bold text-[#183D2B] tracking-wider uppercase">
-                {card.badge}
+            <div>
+              <div className="flex items-center gap-1 text-[#E36A2E] mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-3.5 h-3.5 fill-[#E36A2E]" />
+                ))}
               </div>
+              <p className="text-xs sm:text-sm text-[#183D2B]/85 font-sans leading-relaxed italic mb-6">
+                &ldquo;{item.quote}&rdquo;
+              </p>
             </div>
 
-            {/* Card Body */}
-            <div className="p-6 flex-1 flex flex-col justify-between">
-              <div>
-                <span className="text-[10px] font-mono text-[#183D2B]/50 uppercase tracking-wider block mb-1">
-                  {card.category}
-                </span>
-                <h3 className="font-serif text-xl font-bold text-[#183D2B] mb-2 group-hover:text-[#E36A2E] transition-colors">
-                  {card.title}
-                </h3>
-                <p className="text-xs text-[#183D2B]/75 leading-relaxed font-sans line-clamp-3">
-                  {card.desc}
-                </p>
-              </div>
-
-              {/* Card Meta Stats */}
-              <div className="mt-6 pt-4 border-t border-[#183D2B]/10">
-                <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-mono mb-4 text-[#183D2B]/70">
-                  <div>
-                    <span className="block text-[#183D2B]/40 text-[9px] uppercase">DISTANCE</span>
-                    <span className="font-bold text-[#183D2B]">{card.distance}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[#183D2B]/40 text-[9px] uppercase">DURATION</span>
-                    <span className="font-bold text-[#183D2B]">{card.duration}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[#183D2B]/40 text-[9px] uppercase">GRADE</span>
-                    <span className="font-bold text-[#4E6B48]">{card.difficulty}</span>
-                  </div>
+            <div className="pt-4 border-t border-[#183D2B]/10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-serif font-bold text-sm text-[#183D2B]">{item.author}</h4>
+                  <p className="text-[11px] text-[#183D2B]/60 font-sans">{item.role}</p>
                 </div>
-
-                <Link
-                  href="/trails/demo"
-                  className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-full border border-[#183D2B]/20 bg-[#FAF8F3] hover:bg-[#183D2B] hover:text-[#FAF8F3] text-xs font-mono uppercase tracking-wider text-[#183D2B] font-semibold transition-colors"
-                >
-                  <span>Inspect Traverse</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
+                <span className="text-[9px] font-mono uppercase bg-[#183D2B]/5 px-2 py-1 rounded text-[#183D2B]/70">
+                  {item.trailTested}
+                </span>
               </div>
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Community Network Badges */}
+      <div className="mt-12 text-center pt-8 border-t border-[#183D2B]/10">
+        <span className="text-[10px] font-mono uppercase tracking-widest text-[#183D2B]/40 block mb-4">
+          COMMUNITY & FIELD ROASTER NETWORK
+        </span>
+        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-mono text-[#183D2B]/60 uppercase tracking-wider">
+          <span>☕ Independent Roasteries</span>
+          <span>•</span>
+          <span>📖 Heritage Bookstore Archive</span>
+          <span>•</span>
+          <span>🏺 Goan Pottery & Ceramic Guild</span>
+          <span>•</span>
+          <span>🚶 Latin Quarter Walkers</span>
+        </div>
       </div>
     </section>
   );

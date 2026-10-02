@@ -28,6 +28,9 @@ export const metadata: Metadata = {
   title: "TRAIL — Don't just get there. Discover along the way.",
   description:
     'A curated cartographic network connecting independent roasteries, tucked-away second-hand bookshops, wild viewpoints, and forgotten architectural alleyways across living terrain.',
+  icons: {
+    icon: '/logo/trail-icon.png',
+  },
 };
 
 export default function RootLayout({

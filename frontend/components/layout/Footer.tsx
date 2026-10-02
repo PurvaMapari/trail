@@ -9,17 +9,14 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-[#183D2B]/10">
           {/* Brand Col */}
           <div className="lg:col-span-2 space-y-4">
-            <Link href="/" className="flex items-center gap-3">
+            <Link href="/" className="inline-block group">
               <Image
                 src="/logo/trail-logo.png"
                 alt="TRAIL"
-                width={28}
+                width={120}
                 height={28}
-                className="object-contain"
+                className="h-8 w-auto object-contain transition-transform group-hover:scale-[1.02]"
               />
-              <span className="font-serif text-2xl font-bold tracking-tight text-[#183D2B]">
-                TRAIL
-              </span>
             </Link>
             <p className="font-serif italic text-base text-[#4E6B48]">
               &ldquo;Don&apos;t just get there. Discover along the way.&rdquo;

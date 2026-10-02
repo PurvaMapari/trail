@@ -12,20 +12,16 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-[#183D2B]/10 bg-[#F4F2EB]/95 backdrop-blur-md transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative w-8 h-8 flex items-center justify-center">
-            <Image
-              src="/logo/trail-logo.png"
-              alt="TRAIL"
-              width={32}
-              height={32}
-              className="object-contain"
-              priority
-            />
-          </div>
-          <span className="font-serif text-2xl font-bold tracking-tight text-[#183D2B]">
-            TRAIL
-          </span>
+        {/* Brand Logo */}
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <Image
+            src="/logo/trail-logo.png"
+            alt="TRAIL"
+            width={120}
+            height={28}
+            className="h-7 sm:h-8 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+            priority
+          />
           <span className="hidden sm:inline-block text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-[#183D2B]/5 text-[#183D2B]/60 border border-[#183D2B]/10">
             PANAJI
           </span>
