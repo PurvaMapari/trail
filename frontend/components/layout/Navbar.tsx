@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, Compass, ArrowRight, PlusCircle } from 'lucide-react';
+import { Menu, X, Compass, ArrowRight, PlusCircle, Layers } from 'lucide-react';
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -46,6 +46,10 @@ export function Navbar() {
           <Link href="/ai-discovery" className="hover:text-[#183D2B] transition-colors flex items-center gap-1">
             <Compass className="w-3.5 h-3.5 text-[#E36A2E]" />
             AI Discovery
+          </Link>
+          <Link href="/wireframes" className="hover:text-[#183D2B] transition-colors flex items-center gap-1 font-semibold text-[#E36A2E]">
+            <Layers className="w-3.5 h-3.5" />
+            Wireframes
           </Link>
         </nav>
 
@@ -104,6 +108,14 @@ export function Navbar() {
             >
               <span>AI Discovery</span>
               <Compass className="w-4 h-4 text-[#E36A2E]" />
+            </Link>
+            <Link
+              href="/wireframes"
+              onClick={() => setMobileMenuOpen(false)}
+              className="py-1.5 border-b border-[#183D2B]/10 flex items-center justify-between text-[#E36A2E] font-bold"
+            >
+              <span>Screen Wireframes</span>
+              <Layers className="w-4 h-4" />
             </Link>
           </div>
 
