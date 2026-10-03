@@ -16,7 +16,7 @@ import {
   Clock,
   Check,
 } from 'lucide-react';
-import { mockTrails, RichTrail, DetailedStop } from '@/data/trails';
+import { mockTrails, RichTrail, DetailedStop, getActiveTrailStops } from '@/data/trails';
 import { ActiveTrailHeader } from '@/components/trails/ActiveTrailHeader';
 import { ActiveTrailLedger } from '@/components/trails/ActiveTrailLedger';
 import { ActiveTrailCorridor } from '@/components/trails/ActiveTrailCorridor';
@@ -26,43 +26,6 @@ import {
   TrailCompletionModal,
   TrailOverviewModal
 } from '@/components/trails/ActiveTrailModals';
-
-
-function getTrailStops(trail: RichTrail): DetailedStop[] {
-  if (trail.detailedStops && trail.detailedStops.length > 0) {
-    return trail.detailedStops;
-  }
-  const totalStops = trail.stops?.length || 4;
-  const stepDist = trail.distanceKm ? (trail.distanceKm / totalStops).toFixed(1) : '0.8';
-  return (trail.stops || []).map((s, idx) => {
-    const dist = (idx * Number(stepDist)).toFixed(1);
-    const elev = '+' + (idx * 4) + 'M';
-    return {
-      id: s.id,
-      name: s.name,
-      shortName: s.name,
-      categoryTag: idx === 0 ? 'START' : idx === totalStops - 1 ? 'TERMINUS' : 'WAYPOINT',
-      estimatedMinutes: s.estimatedMinutes || 20,
-      locationLabel: s.location?.address || (trail.city || 'Panaji') + ' Historic Quarter',
-      refCode: 'REF: ' + trail.id.slice(0, 3).toUpperCase() + '-0' + (idx + 1),
-      plateTag: 'PLATE // 0' + (idx + 1),
-      plateImage: idx === 0 ? trail.coverImage : idx === 1 ? '/images/active-trail/bookstore.jpg' : idx === 2 ? '/images/active-trail/next_thumb.jpg' : trail.heroImage || '/images/td-plate-04.jpg',
-      distanceMarker: dist + ' KM',
-      distanceKm: Number(dist),
-      legLabel: 'STATION 0' + (idx + 1),
-      bearing: ((idx * 70 + 40) % 360) + '°',
-      corridorLabel: s.name + ' Corridor',
-      surfaceType: 'Heritage Pavement',
-      elevationChange: elev + ' → +' + ((idx + 1) * 4) + 'M GRADIENT',
-      elevationProfile: elev,
-      description: s.description,
-      curatorClue: 'Notice the local architectural details and quiet courtyards near ' + s.name + '.',
-      quarterContext: 'An essential sector in the curated discovery traverse of ' + trail.title + '.',
-      nextWalkDistance: idx < totalStops - 1 ? stepDist + ' KM AWAY' : '0.0 KM',
-      nextWalkTime: idx < totalStops - 1 ? '~' + Math.round(Number(stepDist) * 12) + ' MIN WALK' : 'TRAIL COMPLETED',
-    };
-  });
-}
 
 function ActiveTrailContent() {
   const searchParams = useSearchParams();
@@ -91,7 +54,7 @@ function ActiveTrailContent() {
   }, [trailId]);
 
   // Get active stops
-  const stops: DetailedStop[] = getTrailStops(trail);
+  const stops: DetailedStop[] = getActiveTrailStops(trail);
 
   // State
   // Default to station index 1 (Station 02: Independent Bookstore) to match Figma reference
@@ -140,12 +103,24 @@ function ActiveTrailContent() {
 
   // Metric computations
   const totalStops = stops.length;
-  const currentDist = currentStop.distanceKm || currentStopIndex * 0.8;
-  const remainingDist = Math.max(0, trail.distanceKm - currentDist);
-  const remainingMinutes = Math.max(
-    15,
-    Math.round(((totalStops - currentStopIndex) / totalStops) * trail.durationMinutes)
-  );
+  const currentDist =
+    currentStop.distanceKm !== undefined
+      ? currentStop.distanceKm
+      : totalStops > 1
+      ? Math.round((currentStopIndex / (totalStops - 1)) * trail.distanceKm * 10) / 10
+      : 0;
+  const remainingDist = isLastStop
+    ? 0
+    : Math.max(0, Math.round((trail.distanceKm - currentDist) * 10) / 10);
+  const remainingMinutes = isLastStop
+    ? 0
+    : Math.max(
+        5,
+        Math.round(
+          ((totalStops - 1 - currentStopIndex) / Math.max(1, totalStops - 1)) *
+            trail.durationMinutes
+        )
+      );
 
   const handleNextStop = () => {
     if (isLastStop) {
@@ -217,7 +192,7 @@ function ActiveTrailContent() {
         />
 
         {/* Sticky/Floating Tactical HUD Control Bar */}
-        <div className="sticky top-3 z-30 py-2.5 px-4 sm:px-6 rounded-2xl bg-[#FAF8F3]/95 backdrop-blur-md border border-[#183D2B]/15 shadow-md flex flex-wrap items-center justify-between gap-3">
+        <div className="sticky top-20 z-30 py-2.5 px-4 sm:px-6 rounded-2xl bg-[#FAF8F3]/95 backdrop-blur-md border border-[#183D2B]/15 shadow-md flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={handleNextStop}

@@ -54,18 +54,18 @@ export function AISynthesizedDossier({
         <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-[#183D2B]/10 text-[10px] sm:text-[11px] font-mono tracking-wider">
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 rounded bg-[#EBF2EB] border border-[#183D2B]/20 text-[#183D2B] font-bold uppercase">
-              SYNTHESIZED TRAVERSE DOSSIER
+              YOUR PERSONALIZED TRAIL
             </span>
             <span className="text-[#183D2B]/70">
-              {trail.indexRef || 'REF: TR-GOA-2025-084'}
+              {trail.indexRef || 'PAN-GOA-TRAIL'}
             </span>
           </div>
 
           <div className="flex items-center gap-3 text-[#183D2B]/70">
-            <span>LATENCY: 420MS</span>
-            <span>·</span>
+            <span>📍 PANAJI, GOA</span>
+            <span>•</span>
             <span className="text-[#4E6B48] font-bold">
-              CARTOGRAPHIC CADENCE: OPTIMIZED
+              OPTIMIZED WALKING ROUTE
             </span>
           </div>
         </div>
@@ -111,13 +111,14 @@ export function AISynthesizedDossier({
         </div>
 
         {/* Traverse Topology Diagram */}
+        {/* Walking Route Progression Diagram */}
         <div className="p-4 sm:p-5 rounded-xl border border-[#183D2B]/15 bg-white/60 space-y-3">
           <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono tracking-wider">
             <span className="font-bold text-[#183D2B] uppercase">
-              TRAVERSE TOPOLOGY DIAGRAM
+              WALKING ROUTE PROGRESSION
             </span>
             <span className="text-[#183D2B]/70">
-              ESTIMATED FOOT TRAVEL: 48 MIN · PAUSE DURATION: 72 MIN
+              ESTIMATED WALK: ~45 MIN · PAUSE & EXPLORE: ~75 MIN
             </span>
           </div>
 
@@ -159,10 +160,10 @@ export function AISynthesizedDossier({
         <div className="space-y-3">
           <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono tracking-wider pt-2 border-t border-[#183D2B]/10">
             <span className="font-bold text-[#183D2B] uppercase">
-              WAYPOINT LOG [CHRONOLOGICAL EXPEDITION ANCHORS]
+              ROUTE STATIONS & DISCOVERIES
             </span>
             <span className="text-[#183D2B]/60 uppercase">
-              {stops.length} CHECKPOINTS CONSTRAINED
+              {stops.length} CURATED STOPS
             </span>
           </div>
 
@@ -186,7 +187,7 @@ export function AISynthesizedDossier({
                       </span>
                       <span className="inline-flex items-center gap-1 text-[#183D2B]/70">
                         <Clock className="w-3 h-3 text-[#4E6B48]" />
-                        CALIBRATED TIME: ~{stop.estimatedMinutes || 25} MIN
+                        TIME AT STOP: ~{stop.estimatedMinutes || 25} MIN
                       </span>
                     </div>
 
@@ -207,7 +208,7 @@ export function AISynthesizedDossier({
                     {stop.curatorClue && (
                       <div className="p-3 rounded-lg bg-[#F4F6F0] border border-[#4E6B48]/20 text-xs font-sans text-[#183D2B]/90">
                         <span className="font-mono text-[10px] font-bold text-[#183D2B] uppercase block mb-0.5">
-                          DISCOVERY NOTE:
+                          CURATOR FIELD NOTE:
                         </span>
                         <span>{stop.curatorClue}</span>
                       </div>
@@ -217,8 +218,8 @@ export function AISynthesizedDossier({
                   {/* Right Telemetry Column */}
                   <div className="w-full md:w-56 p-3 rounded-lg bg-[#ECE8DD]/50 border border-[#183D2B]/10 font-mono text-[10px] space-y-1.5 shrink-0">
                     <div className="text-[#183D2B]/80">
-                      <span className="text-[#183D2B]/50 block text-[9px]">COORDINATES</span>
-                      <span className="font-bold">{stop.bearing || "15°29'54\"N 73°49'41\"E"}</span>
+                      <span className="text-[#183D2B]/50 block text-[9px]">LOCATION</span>
+                      <span className="font-bold">{stop.locationLabel || 'FONTAINHAS, PANAJI'}</span>
                     </div>
 
                     <div className="text-[#183D2B]/80">
@@ -227,10 +228,10 @@ export function AISynthesizedDossier({
                         {idx === 0
                           ? 'QUIET (<10 P/H)'
                           : idx === 1
-                          ? 'MINIMAL'
+                          ? 'PEACEFUL'
                           : idx === 2
                           ? 'SCATTERED LOCALS'
-                          : 'DUSK SHORE (17:30)'}
+                          : 'EVENING GOLDEN HOUR'}
                       </span>
                     </div>
 
@@ -242,12 +243,18 @@ export function AISynthesizedDossier({
                     </div>
 
                     <div className="pt-1">
-                      <button
-                        type="button"
-                        className="w-full py-1 rounded bg-white/70 border border-[#183D2B]/20 hover:bg-[#183D2B] hover:text-[#FAF8F3] text-[9px] font-bold tracking-wider uppercase transition-colors"
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                          stop.name + ', Panaji, Goa'
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-1.5 px-2 rounded bg-white border border-[#183D2B]/20 hover:bg-[#183D2B] hover:text-[#FAF8F3] text-[9px] font-bold tracking-wider uppercase transition-colors flex items-center justify-center gap-1 cursor-pointer text-center"
+                        title="Open location on Google Maps"
                       >
-                        EXPEDITION MAP PIN
-                      </button>
+                        <span>VIEW ON GOOGLE MAPS</span>
+                        <ArrowRight className="w-2.5 h-2.5 text-[#E36A2E]" />
+                      </a>
                     </div>
                   </div>
                 </div>

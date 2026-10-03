@@ -14,7 +14,7 @@ export function CreateTrailActions({
   isSubmitting = false,
 }: CreateTrailActionsProps) {
   return (
-    <div className="p-4 sm:p-6 rounded-2xl border border-[#183D2B]/15 bg-[#FAF8F3] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="p-4 sm:p-5 rounded-2xl border border-[#183D2B]/15 bg-[#FAF8F3] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       {/* Left description */}
       <div className="space-y-1 max-w-xl">
         <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold text-[#183D2B] tracking-wider uppercase">
@@ -34,7 +34,7 @@ export function CreateTrailActions({
           className="inline-flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl border border-[#183D2B]/20 bg-[#ECE8DD]/50 hover:bg-[#ECE8DD] text-[#183D2B] text-xs font-mono font-bold tracking-wider uppercase transition-all text-center"
         >
           <Sparkles className="w-3.5 h-3.5 text-[#4E6B48]" />
-          <span>LET TRAIL SUGGEST §</span>
+          <span>LET AI SUGGEST</span>
         </Link>
 
         {/* Primary Action Button */}

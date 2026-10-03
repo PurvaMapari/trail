@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import {
   ChevronUp,
   ChevronDown,
@@ -115,7 +116,7 @@ export function WaypointSequence({
                   </span>
                 </div>
 
-                {/* Waypoint Card */}
+                {/* Waypoint Card with Thumbnail Photo */}
                 <div className="flex items-start gap-3">
                   <div
                     className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-2 font-mono text-[10px] font-bold ${
@@ -127,58 +128,73 @@ export function WaypointSequence({
                     {nodeNum}
                   </div>
 
-                  <div className="flex-1 min-w-0 p-3 rounded-xl border border-[#183D2B]/15 bg-white/70 hover:border-[#183D2B]/30 transition-all">
-                    {/* Top Row: Category + Duration + Action Buttons */}
-                    <div className="flex items-center justify-between gap-2 pb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="px-1.5 py-0.5 rounded bg-[#ECE8DD] text-[9px] font-mono font-bold text-[#183D2B] uppercase">
-                          {wp.categoryTag || 'HERITAGE'}
-                        </span>
-                        <span className="text-[9px] font-mono text-[#183D2B]/60">
-                          ~{wp.estimatedMinutes || 25} MIN {isLast ? 'TERMINUS' : 'EXPLORE'}
-                        </span>
+                  <div className="flex-1 min-w-0 p-3 sm:p-3.5 rounded-xl border border-[#183D2B]/15 bg-white/80 hover:border-[#183D2B]/30 transition-all flex flex-col sm:flex-row gap-3 items-start">
+                    {/* Waypoint Thumbnail Photo */}
+                    {wp.plateImage && (
+                      <div className="relative w-full sm:w-24 h-24 sm:h-20 rounded-lg overflow-hidden shrink-0 border border-[#183D2B]/15 bg-[#ECE8DD]">
+                        <Image
+                          src={wp.plateImage}
+                          alt={wp.name}
+                          fill
+                          sizes="(max-width: 640px) 100vw, 96px"
+                          className="object-cover"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex-1 min-w-0 w-full">
+                      {/* Top Row: Category + Duration + Action Buttons */}
+                      <div className="flex items-center justify-between gap-2 pb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-1.5 py-0.5 rounded bg-[#ECE8DD] text-[9px] font-mono font-bold text-[#183D2B] uppercase">
+                            {wp.categoryTag || 'HERITAGE'}
+                          </span>
+                          <span className="text-[9px] font-mono text-[#183D2B]/60">
+                            ~{wp.estimatedMinutes || 25} MIN {isLast ? 'TERMINUS' : 'EXPLORE'}
+                          </span>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <button
+                            type="button"
+                            disabled={isFirst}
+                            onClick={() => onMoveUp(idx)}
+                            className="w-5 h-5 rounded flex items-center justify-center text-[#183D2B]/60 hover:text-[#183D2B] hover:bg-[#183D2B]/5 disabled:opacity-20 cursor-pointer"
+                            title="Move up"
+                          >
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isLast}
+                            onClick={() => onMoveDown(idx)}
+                            className="w-5 h-5 rounded flex items-center justify-center text-[#183D2B]/60 hover:text-[#183D2B] hover:bg-[#183D2B]/5 disabled:opacity-20 cursor-pointer"
+                            title="Move down"
+                          >
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onRemove(idx)}
+                            className="w-5 h-5 rounded flex items-center justify-center text-[#183D2B]/60 hover:text-[#E36A2E] hover:bg-[#E36A2E]/10 cursor-pointer ml-1"
+                            title="Remove waypoint"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Controls */}
-                      <div className="flex items-center gap-0.5 shrink-0">
-                        <button
-                          type="button"
-                          disabled={isFirst}
-                          onClick={() => onMoveUp(idx)}
-                          className="w-5 h-5 rounded flex items-center justify-center text-[#183D2B]/60 hover:text-[#183D2B] hover:bg-[#183D2B]/5 disabled:opacity-20 cursor-pointer"
-                          title="Move up"
-                        >
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isLast}
-                          onClick={() => onMoveDown(idx)}
-                          className="w-5 h-5 rounded flex items-center justify-center text-[#183D2B]/60 hover:text-[#183D2B] hover:bg-[#183D2B]/5 disabled:opacity-20 cursor-pointer"
-                          title="Move down"
-                        >
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onRemove(idx)}
-                          className="w-5 h-5 rounded flex items-center justify-center text-[#183D2B]/60 hover:text-[#E36A2E] hover:bg-[#E36A2E]/10 cursor-pointer ml-1"
-                          title="Remove waypoint"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      {/* Title */}
+                      <h4 className="font-serif font-bold text-sm sm:text-base text-[#183D2B] tracking-tight">
+                        {wp.name}
+                      </h4>
+
+                      {/* Description */}
+                      <p className="text-xs text-[#183D2B]/75 line-clamp-2 mt-0.5 font-sans leading-relaxed">
+                        {wp.description}
+                      </p>
                     </div>
-
-                    {/* Title */}
-                    <h4 className="font-serif font-bold text-sm sm:text-base text-[#183D2B] tracking-tight">
-                      {wp.name}
-                    </h4>
-
-                    {/* Description */}
-                    <p className="text-xs text-[#183D2B]/75 line-clamp-2 mt-0.5 font-sans leading-relaxed">
-                      {wp.description}
-                    </p>
                   </div>
                 </div>
               </React.Fragment>

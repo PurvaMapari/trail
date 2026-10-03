@@ -15,7 +15,7 @@ export function FieldDeskFooter() {
                 TRAIL
               </span>
               <span className="px-1.5 py-0.5 rounded bg-[#ECE8DD] text-[10px] font-mono font-bold text-[#183D2B]/80">
-                ED. 04
+                ED. 01
               </span>
             </div>
             <p className="text-xs text-[#183D2B]/75 leading-relaxed font-sans max-w-sm">
@@ -78,8 +78,8 @@ export function FieldDeskFooter() {
 
         {/* Bottom Rights Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 text-[10px] font-mono text-[#183D2B]/60 tracking-wider">
-          <span>INDEX 45-B {'//'} CARTOGRAPHIC REGISTER - ALL RIGHTS RESERVED</span>
-          <span>© 2025 TRAIL EXPEDITION SYSTEMS - PRODUCED FOR FIELD OBSERVATION</span>
+          <span>© {new Date().getFullYear()} TRAIL CARTOGRAPHIC INITIATIVE. ALL RIGHTS RESERVED.</span>
+          <span>PANAJI, GOA · 15.4989° N, 73.8278° E</span>
         </div>
       </div>
     </footer>

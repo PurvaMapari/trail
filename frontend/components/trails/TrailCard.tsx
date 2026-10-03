@@ -10,8 +10,9 @@ export interface TrailCardProps {
 export function TrailCard({ trail }: TrailCardProps) {
   const categoryLabel = trail.categoryTags?.join(' · ') || trail.category.toUpperCase();
   const durationHours = (trail.durationMinutes / 60).toFixed(trail.durationMinutes % 60 === 0 ? 0 : 1);
-  const formattedDistance = trail.distanceKm < 10 ? `0${trail.distanceKm.toFixed(1)}` : trail.distanceKm.toFixed(1);
-  const formattedStops = trail.stops.length < 10 ? `0${trail.stops.length}` : trail.stops.length;
+  const stopsCount = trail.stops?.length ?? (trail as any).detailedStops?.length ?? 4;
+  const formattedDistance = (trail.distanceKm ?? 3.0) < 10 ? `0${(trail.distanceKm ?? 3.0).toFixed(1)}` : (trail.distanceKm ?? 3.0).toFixed(1);
+  const formattedStops = stopsCount < 10 ? `0${stopsCount}` : stopsCount;
 
   return (
     <div className="group rounded-2xl border border-[#183D2B]/15 bg-white overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between">

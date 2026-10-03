@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FieldDeskFooter } from '@/components/layout/FieldDeskFooter';
+
 import { CreateTrailHeader } from '@/components/create-trail/CreateTrailHeader';
 import {
   CreateTrailForm,
@@ -72,7 +72,7 @@ export default function CreateTrailPage() {
       description: 'Historic bookstore stocking Goan folklore, cartography & poetry.',
       locationLabel: 'CHURCH SQUARE CORNER',
       refCode: 'REF: FNT-BK-02',
-      plateImage: '/images/active-trail/bookstore.jpg',
+      plateImage: '/images/trails/trail-bookstore-vinyl.jpg',
       distanceMarker: '1.2 KM',
       distanceKm: 1.2,
       legWalkDistance: '0.8 km',
@@ -95,7 +95,7 @@ export default function CreateTrailPage() {
       description: 'Ochre azulejos, tiled facades, and quiet bougainvillea corridors.',
       locationLabel: 'CHAPEL INTERSECTION',
       refCode: 'REF: FNT-ART-03',
-      plateImage: '/images/active-trail/next_thumb.jpg',
+      plateImage: '/images/trails/trail-art-after-dark.jpg',
       distanceMarker: '2.0 KM',
       distanceKm: 2.0,
       legWalkDistance: '0.6 km',
@@ -118,7 +118,7 @@ export default function CreateTrailPage() {
       description: 'Open promenade facing the delta ferry slips and tidal mangrove channels.',
       locationLabel: 'MANDOVI WATERFRONT',
       refCode: 'REF: FNT-TRM-04',
-      plateImage: '/images/td-plate-04.jpg',
+      plateImage: '/images/trails/trail-coastal-walk.jpg',
       distanceMarker: '3.2 KM',
       distanceKm: 3.2,
       legWalkDistance: '0.9 km',
@@ -173,11 +173,42 @@ export default function CreateTrailPage() {
       setErrorMessage('A curated trail requires at least 2 waypoint checkpoints.');
       return;
     }
+    const removedWp = waypoints[index];
+    const legDist = parseFloat(removedWp.legWalkDistance || '0.6') || 0.6;
+    const legMins = removedWp.estimatedMinutes || 20;
+
     setWaypoints((prev) => prev.filter((_, idx) => idx !== index));
+    setFormState((prev) => {
+      const newDist = Math.max(1.0, Math.round((prev.distanceKm - legDist) * 10) / 10);
+      const newMins = Math.max(30, prev.durationMinutes - legMins);
+      const hours = Math.round((newMins / 60) * 10) / 10;
+      return {
+        ...prev,
+        distanceKm: newDist,
+        distanceLabel: `UP TO ${newDist.toFixed(1)} KM`,
+        durationMinutes: newMins,
+        durationLabel: `${hours} HOURS`,
+      };
+    });
   };
 
   const handleAddWaypoint = (wp: DraftWaypoint) => {
+    const legDist = parseFloat(wp.legWalkDistance || '0.6') || 0.6;
+    const legMins = wp.estimatedMinutes || 20;
+
     setWaypoints((prev) => [...prev, wp]);
+    setFormState((prev) => {
+      const newDist = Math.round((prev.distanceKm + legDist) * 10) / 10;
+      const newMins = prev.durationMinutes + legMins;
+      const hours = Math.round((newMins / 60) * 10) / 10;
+      return {
+        ...prev,
+        distanceKm: newDist,
+        distanceLabel: `UP TO ${newDist.toFixed(1)} KM`,
+        durationMinutes: newMins,
+        durationLabel: `${hours} HOURS`,
+      };
+    });
     setErrorMessage(null);
   };
 
@@ -230,30 +261,38 @@ export default function CreateTrailPage() {
         description: wp.description,
         estimatedMinutes: wp.estimatedMinutes || 25,
       })),
-      detailedStops: waypoints.map((wp, idx) => ({
-        id: wp.id || `stop-${idx + 1}`,
-        name: wp.name,
-        shortName: wp.shortName || wp.name,
-        categoryTag: wp.categoryTag || 'HERITAGE',
-        estimatedMinutes: wp.estimatedMinutes || 25,
-        locationLabel: wp.locationLabel || formState.startingPoint,
-        refCode: wp.refCode || `REF: PNJ-0${idx + 1}`,
-        plateTag: wp.plateTag || `PLATE // 0${idx + 1}`,
-        plateImage: wp.plateImage || '/images/active-trail/bookstore.jpg',
-        distanceMarker: `${(idx * (formState.distanceKm / waypoints.length)).toFixed(1)} KM`,
-        distanceKm: Number((idx * (formState.distanceKm / waypoints.length)).toFixed(1)),
-        legLabel: `STATION 0${idx + 1}`,
-        bearing: wp.bearing || `${(idx * 75 + 40) % 360}°`,
-        corridorLabel: wp.corridorLabel || `${wp.name} Corridor`,
-        surfaceType: wp.surfaceType || 'Heritage Pavement',
-        elevationChange: wp.elevationChange || '+2M → +8M GRADIENT',
-        elevationProfile: wp.elevationProfile || '+6M',
-        description: wp.description,
-        curatorClue: wp.curatorClue || `Notice the distinctive architecture and historic courtyard details near ${wp.name}.`,
-        quarterContext: wp.quarterContext || `An essential anchor in this custom traverse calibrated around ${formState.startingPoint}.`,
-        nextWalkDistance: idx < waypoints.length - 1 ? `${wp.legWalkDistance || '0.6 km'} AWAY` : '0.0 KM',
-        nextWalkTime: idx < waypoints.length - 1 ? `${wp.legWalkTime || '8 min'} WALK` : 'TRAIL COMPLETED',
-      })),
+      detailedStops: waypoints.map((wp, idx) => {
+        const segments = Math.max(1, waypoints.length - 1);
+        const isFirst = idx === 0;
+        const isLast = idx === waypoints.length - 1;
+        const stopDist = isLast ? formState.distanceKm : Math.round((idx * (formState.distanceKm / segments)) * 10) / 10;
+        const legDist = (formState.distanceKm / segments).toFixed(1);
+
+        return {
+          id: wp.id || `stop-${idx + 1}`,
+          name: wp.name,
+          shortName: wp.shortName || wp.name,
+          categoryTag: wp.categoryTag || (isFirst ? 'START' : isLast ? 'TERMINUS' : 'HERITAGE'),
+          estimatedMinutes: wp.estimatedMinutes || 25,
+          locationLabel: wp.locationLabel || formState.startingPoint,
+          refCode: wp.refCode || `REF: PNJ-0${idx + 1}`,
+          plateTag: wp.plateTag || (isFirst ? '01 STARTING ANCHOR' : isLast ? `0${idx + 1} TERMINUS` : `0${idx + 1} WAYPOINT`),
+          plateImage: wp.plateImage || '/images/active-trail/bookstore.jpg',
+          distanceMarker: `${stopDist.toFixed(1)} KM`,
+          distanceKm: stopDist,
+          legLabel: `STATION 0${idx + 1}`,
+          bearing: wp.bearing || `${(idx * 75 + 40) % 360}°`,
+          corridorLabel: wp.corridorLabel || `${wp.name} Corridor`,
+          surfaceType: wp.surfaceType || 'Heritage Pavement',
+          elevationChange: wp.elevationChange || '+2M → +8M GRADIENT',
+          elevationProfile: wp.elevationProfile || '+6M',
+          description: wp.description,
+          curatorClue: wp.curatorClue || `Notice the distinctive architecture and historic courtyard details near ${wp.name}.`,
+          quarterContext: wp.quarterContext || `An essential anchor in this custom traverse calibrated around ${formState.startingPoint}.`,
+          nextWalkDistance: !isLast ? `${wp.legWalkDistance || `${legDist} km`} AWAY` : '0.0 KM',
+          nextWalkTime: !isLast ? `${wp.legWalkTime || `~${Math.max(5, Math.round(Number(legDist) * 12))} min`} WALK` : 'TRAIL COMPLETED',
+        };
+      }),
     };
 
     // Save trail to session storage & memory registry
@@ -281,12 +320,18 @@ export default function CreateTrailPage() {
 
         {/* 2-Column Worktable Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column (7 cols): Configuration Steps 01 to 04 */}
+          {/* Left Column (7 cols): Configuration Steps 01 to 04 + Action Ribbon */}
           <div className="lg:col-span-7 space-y-5">
             <CreateTrailForm
               formState={formState}
               onChange={handleFormChange}
               onOpenLocationPicker={() => setIsLocationModalOpen(true)}
+            />
+
+            {/* Create Trail Action Ribbon — placed directly after filters */}
+            <CreateTrailActions
+              onSubmit={handleCreateTrail}
+              isSubmitting={isSubmitting}
             />
           </div>
 
@@ -304,16 +349,7 @@ export default function CreateTrailPage() {
             />
           </div>
         </div>
-
-        {/* Bottom Action Ribbon */}
-        <CreateTrailActions
-          onSubmit={handleCreateTrail}
-          isSubmitting={isSubmitting}
-        />
       </main>
-
-      {/* Archival Field Desk Footer */}
-      <FieldDeskFooter />
 
       {/* Modals */}
       <AddWaypointModal
