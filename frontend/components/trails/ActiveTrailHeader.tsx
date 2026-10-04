@@ -42,24 +42,20 @@ export function ActiveTrailHeader({
 
           <span className="inline-flex items-center gap-1.5 font-bold text-[#E36A2E]">
             <span className="w-2 h-2 rounded-full bg-[#E36A2E] animate-pulse" />
-            ACTIVE TRAIL · STATION {currentStationNumber} OF {totalStationsNumber} · IN PROGRESS
+            STATION {currentStationNumber} OF {totalStationsNumber} · IN PROGRESS
           </span>
 
           <span className="hidden md:inline text-[#183D2B]/40">·</span>
 
           <span className="hidden md:inline">
-            SECTOR: {trail.localeLabel?.toUpperCase() || 'PANAJI'} ({currentStop.bearing || "15°29'N 73°49'E"})
+            {trail.localeLabel || 'Panaji, Goa'}
           </span>
-
-          <span className="hidden lg:inline text-[#183D2B]/40">·</span>
-
-          <span className="hidden lg:inline">DATUM: WGS 84</span>
         </div>
 
         <div className="flex items-center gap-3 sm:gap-4 shrink-0 ml-auto">
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 text-[#4E6B48] font-bold">
             <Crosshair className="w-3 h-3 text-[#4E6B48]" />
-            ACCURACY ±1.8M
+            LIVE TRAIL GUIDE
           </span>
           <span className="inline-flex items-center gap-1">
             <Compass className="w-3 h-3 text-[#4E6B48]" />

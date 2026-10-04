@@ -551,8 +551,8 @@ export function generateIntelligentFallback(
     const landmark = isTouristyExcluded
       ? curated_spots.find((s) => s.id === 'spot-mandovi-books')!
       : curated_spots.find((s) => s.id === 'spot-old-secretariat')!;
-    const overlook = curated_spots.find((s) => s.id === 'spot-altinho-overlook')!;
-    const promenade = curated_spots.find((s) => s.id === 'spot-mandovi-promenade')!;
+    const overlook = curated_spots.find((s) => s.id === 'spot-altinho-view')!;
+    const promenade = curated_spots.find((s) => s.id === 'spot-mandovi-embankment')!;
     const vinylOrMural = curated_spots.find((s) => s.id === 'spot-vinyl-den') || curated_spots.find((s) => s.id === 'spot-tiger-mural')!;
 
     // 5-Hour / 300-Minute Comprehensive Walking Plan

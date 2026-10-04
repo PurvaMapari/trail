@@ -1,7 +1,7 @@
 'use client';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 
-import React, { useState } from 'react';
-import { FieldDeskFooter } from '@/components/layout/FieldDeskFooter';
 import { AIDiscoveryHeader } from '@/components/ai-discovery/AIDiscoveryHeader';
 import { AIIntentInput } from '@/components/ai-discovery/AIIntentInput';
 import {
@@ -13,7 +13,8 @@ import { generateTrail, createCuratedTrail } from '@/lib/api';
 import { RichTrail } from '@/data/trails';
 import { AlertCircle } from 'lucide-react';
 
-export default function AIDiscoveryPage() {
+function AIDiscoveryContent() {
+  const searchParams = useSearchParams();
   // Input State initialized to match the Figma reference
   const [prompt, setPrompt] = useState('');
 
@@ -31,8 +32,20 @@ export default function AIDiscoveryPage() {
   const [synthesizedTrail, setSynthesizedTrail] = useState<RichTrail | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Note: auto-synthesis on load removed — user triggers generation via "Synthesize" button
-  // to avoid consuming Gemini API quota on every page visit.
+  useEffect(() => {
+    const qPrompt = searchParams.get('prompt');
+    if (qPrompt && !prompt) {
+      setPrompt(qPrompt);
+      const lower = qPrompt.toLowerCase();
+      if (lower.includes('coffee') || lower.includes('espresso')) {
+        setCalibration((prev) => ({ ...prev, tags: ['Coffee', 'Books', 'Quiet'] }));
+      } else if (lower.includes('art') || lower.includes('mural')) {
+        setCalibration((prev) => ({ ...prev, tags: ['Art', 'Murals', 'Architecture'] }));
+      } else if (lower.includes('sunset') || lower.includes('river')) {
+        setCalibration((prev) => ({ ...prev, tags: ['Viewpoints', 'Sunset', 'River Walk'] }));
+      }
+    }
+  }, [searchParams]);
 
 
   const handleSynthesize = async (overridePrompt?: string) => {
@@ -172,9 +185,23 @@ export default function AIDiscoveryPage() {
           </div>
         )}
       </main>
-
-      {/* Field Desk Footer */}
-      <FieldDeskFooter />
     </div>
+  );
+}
+
+export default function AIDiscoveryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F4F2EB] flex items-center justify-center p-8">
+          <div className="flex items-center gap-3 text-xs font-mono text-[#183D2B]/70">
+            <div className="w-4 h-4 rounded-full border-2 border-[#183D2B] border-t-transparent animate-spin" />
+            <span>CALIBRATING SENSORS &amp; TELEMETRY...</span>
+          </div>
+        </div>
+      }
+    >
+      <AIDiscoveryContent />
+    </Suspense>
   );
 }

@@ -38,61 +38,56 @@ export function Footer() {
             <ul className="space-y-2.5 text-xs text-[#183D2B]/70 font-sans">
               <li>
                 <Link href="/explore" className="hover:text-[#183D2B] transition-colors">
-                  Explore All (42)
+                  All Walking Trails
                 </Link>
               </li>
               <li>
-                <Link href="/explore" className="hover:text-[#183D2B] transition-colors">
+                <Link href="/explore?cat=nature" className="hover:text-[#183D2B] transition-colors">
                   Coastal Overlooks
                 </Link>
               </li>
               <li>
-                <Link href="/explore" className="hover:text-[#183D2B] transition-colors">
-                  Literary &amp; Roastery Walks
+                <Link href="/explore?cat=food" className="hover:text-[#183D2B] transition-colors">
+                  Cafés &amp; Roasteries
                 </Link>
               </li>
               <li>
-                <Link href="/explore" className="hover:text-[#183D2B] transition-colors">
-                  Secret Stairways
+                <Link href="/explore?cat=hidden-gems" className="hover:text-[#183D2B] transition-colors">
+                  Hidden Courtyards &amp; Gems
                 </Link>
               </li>
               <li>
-                <Link href="/explore" className="hover:text-[#183D2B] transition-colors">
-                  Urban Murals
+                <Link href="/explore?cat=art" className="hover:text-[#183D2B] transition-colors">
+                  Street Art &amp; Murals
                 </Link>
               </li>
             </ul>
           </div>
 
-          {/* Col 2: Cartography */}
+          {/* Col 2: Cartography & Tools */}
           <div>
             <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#183D2B] mb-4">
-              Cartography
+              Discovery Tools
             </h4>
             <ul className="space-y-2.5 text-xs text-[#183D2B]/70 font-sans">
               <li>
-                <a href="#cartography" className="hover:text-[#183D2B] transition-colors">
-                  Topographic Engine
-                </a>
-              </li>
-              <li>
-                <a href="#protocol" className="hover:text-[#183D2B] transition-colors">
-                  Four-Step Protocol
-                </a>
-              </li>
-              <li>
-                <a href="#hardware" className="hover:text-[#183D2B] transition-colors">
-                  Field Instrument
-                </a>
-              </li>
-              <li>
-                <Link href="/ai-discovery" className="hover:text-[#183D2B] transition-colors">
-                  Algorithmic Compass
+                <Link href="/explore?tab=places" className="hover:text-[#183D2B] transition-colors">
+                  21 Curated Places Database
                 </Link>
               </li>
               <li>
                 <Link href="/create-trail" className="hover:text-[#183D2B] transition-colors">
-                  Submit Field Dossier
+                  Create Custom Trail
+                </Link>
+              </li>
+              <li>
+                <Link href="/ai-discovery" className="hover:text-[#183D2B] transition-colors">
+                  AI Route Scout
+                </Link>
+              </li>
+              <li>
+                <Link href="/active-trail" className="hover:text-[#183D2B] transition-colors">
+                  Active Walking Guide
                 </Link>
               </li>
             </ul>
@@ -127,7 +122,7 @@ export function Footer() {
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[10px] font-mono uppercase tracking-wider text-[#183D2B]/50">
           <p>&copy; {new Date().getFullYear()} TRAIL CARTOGRAPHIC INITIATIVE. ALL RIGHTS RESERVED.</p>
           <div className="flex items-center gap-4">
-            <span>37.7749° N, 122.4194° W</span>
+            <span>15.4989° N, 73.8278° E</span>
             <span>&bull;</span>
             <span className="text-[#E36A2E] font-semibold">EDITION 01 ACTIVE</span>
           </div>
