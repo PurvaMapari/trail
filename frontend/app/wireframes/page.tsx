@@ -23,10 +23,7 @@ import {
   Maximize2
 } from 'lucide-react';
 
-type ProjectTab = 'trail' | 'wealthnest';
-
 export default function WireframesPage() {
-  const [activeProject, setActiveProject] = useState<ProjectTab>('trail');
   const [selectedScreenIndex, setSelectedScreenIndex] = useState(0);
 
   const trailScreens = [
@@ -470,7 +467,8 @@ export default function WireframesPage() {
     },
   ];
 
-  const wealthnestScreens = [
+  /*
+  const wealthnestScreensToRemove = [
     {
       id: 'wn-onboarding',
       name: 'W-01. Value-First Onboarding',
@@ -790,8 +788,9 @@ export default function WireframesPage() {
       ),
     },
   ];
+  */
 
-  const currentScreens = activeProject === 'trail' ? trailScreens : wealthnestScreens;
+  const currentScreens = trailScreens;
   const activeScreen = currentScreens[selectedScreenIndex] || currentScreens[0];
 
   return (
@@ -812,34 +811,8 @@ export default function WireframesPage() {
             </p>
           </div>
 
-          {/* Project Switcher Tabs */}
-          <div className="flex items-center p-1 rounded-xl bg-white border border-[#183D2B]/15 shadow-sm">
-            <button
-              onClick={() => {
-                setActiveProject('trail');
-                setSelectedScreenIndex(0);
-              }}
-              className={`px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                activeProject === 'trail'
-                  ? 'bg-[#183D2B] text-white shadow-xs'
-                  : 'text-[#183D2B]/70 hover:text-[#183D2B]'
-              }`}
-            >
-              TRAIL Project (10 Screens)
-            </button>
-            <button
-              onClick={() => {
-                setActiveProject('wealthnest');
-                setSelectedScreenIndex(0);
-              }}
-              className={`px-4 py-2 rounded-lg text-xs font-mono font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                activeProject === 'wealthnest'
-                  ? 'bg-[#183D2B] text-white shadow-xs'
-                  : 'text-[#183D2B]/70 hover:text-[#183D2B]'
-              }`}
-            >
-              WealthNest Audit (5 Modules)
-            </button>
+          <div className="flex items-center px-4 py-2 rounded-xl bg-white border border-[#183D2B]/15 shadow-sm text-xs font-mono font-bold text-[#183D2B]">
+            TRAIL System (10 Verified Screens)
           </div>
         </div>
 
@@ -848,12 +821,6 @@ export default function WireframesPage() {
           <span className="font-bold text-[#E36A2E]">DOCUMENTS ARCHIVE:</span>
           <span className="px-2.5 py-1 rounded bg-white border border-[#183D2B]/15 text-[11px]">
             docs/wireframes/TRAIL_WIREFRAMES.md
-          </span>
-          <span className="px-2.5 py-1 rounded bg-white border border-[#183D2B]/15 text-[11px]">
-            docs/wireframes/WEALTHNEST_WIREFRAMES.md
-          </span>
-          <span className="px-2.5 py-1 rounded bg-white border border-[#183D2B]/15 text-[11px]">
-            docs/WEALTHNEST_UI_UX_AUDIT.md
           </span>
         </div>
       </section>
@@ -906,7 +873,7 @@ export default function WireframesPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-[#183D2B]/10">
               <div>
                 <span className="text-[10px] font-mono uppercase tracking-widest text-[#E36A2E] font-bold">
-                  LOW-FIDELITY WIREFRAME · {activeProject.toUpperCase()}
+                  LOW-FIDELITY WIREFRAME · TRAIL
                 </span>
                 <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#183D2B]">
                   {activeScreen.name}
@@ -916,7 +883,7 @@ export default function WireframesPage() {
                 </div>
               </div>
 
-              {activeProject === 'trail' && (
+              {activeScreen.route.startsWith('/') && (
                 <Link
                   href={activeScreen.route}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#183D2B]/10 hover:bg-[#183D2B] hover:text-white text-xs font-mono text-[#183D2B] font-bold transition-all shrink-0"

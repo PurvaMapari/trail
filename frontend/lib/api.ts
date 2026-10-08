@@ -99,6 +99,56 @@ export async function createTrail(trail: Partial<Trail>): Promise<{ success: boo
   };
 }
 
+/**
+ * Fetch curated places/spots dataset from backend /api/spots with fallback to local dataset
+ */
+export async function fetchSpots(category?: string): Promise<Spot[]> {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+  const endpoints = [
+    `${backendUrl}/api/spots`,
+    '/api/spots',
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const url = new URL(endpoint, typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+      if (category && category !== 'all') {
+        url.searchParams.set('category', category);
+      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+      const res = await fetch(url.toString(), {
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.spots) && data.spots.length > 0) {
+          return data.spots as Spot[];
+        }
+      }
+    } catch {
+      // Continue to next endpoint or fallback
+    }
+  }
+
+  // Fallback to local curated_spots dataset
+  if (category && category !== 'all') {
+    return curated_spots.filter((s) => s.category.toLowerCase() === category.toLowerCase());
+  }
+  return curated_spots;
+}
+
+/**
+ * Fetch a single spot by ID
+ */
+export async function fetchSpotById(id: string): Promise<Spot | null> {
+  const spots = await fetchSpots();
+  return spots.find((s) => s.id === id) || null;
+}
 
 export interface AIGenerateParams {
   prompt?: string;
@@ -226,7 +276,20 @@ export function createCuratedTrail(params?: AIGenerateParams): RichTrail {
   });
 
   scored.sort((a, b) => b.score - a.score);
-  const topSpots = scored.filter((s) => s.score > 0).map((s) => s.spot);
+
+  // Add controlled randomness: jitter scores and rotate starting position
+  const jitterSeed = Date.now() % 1000;
+  const topN = Math.min(8, scored.length);
+  const topPool = scored.slice(0, topN).map((item, idx) => ({
+    ...item,
+    score: item.score + (Math.sin(jitterSeed + idx * 137.5) * 0.8),
+  }));
+  topPool.sort((a, b) => b.score - a.score);
+
+  const startOffset = Math.floor(Math.random() * Math.min(3, topPool.length));
+  const reordered = [...topPool.slice(startOffset), ...topPool.slice(0, startOffset)];
+
+  const topSpots = reordered.filter((s) => s.score > 0).map((s) => s.spot);
   const selectedSpots = topSpots.length >= 3 ? topSpots.slice(0, 4) : curated_spots.slice(0, 4);
 
   const plateImages = [
@@ -236,12 +299,16 @@ export function createCuratedTrail(params?: AIGenerateParams): RichTrail {
     '/images/td-plate-04.jpg',
   ];
 
+  // Precompute legs so each stop knows the distance to the next stop
+  const legDistances = selectedSpots.map((_, i) =>
+    i === 0 ? 0 : Math.round((0.6 + i * 0.3) * 10) / 10
+  );
   let cumulativeKm = 0;
   const detailedStops: DetailedStop[] = selectedSpots.map((spot, i) => {
     const isFirst = i === 0;
     const isLast = i === selectedSpots.length - 1;
-    const legDistance = isFirst ? 0 : Math.round((0.5 + i * 0.4) * 10) / 10;
-    cumulativeKm += legDistance;
+    cumulativeKm += legDistances[i];
+    const nextLeg = !isLast ? legDistances[i + 1] : 0;
     const stationNum = String(i + 1).padStart(2, '0');
 
     return {
@@ -255,7 +322,7 @@ export function createCuratedTrail(params?: AIGenerateParams): RichTrail {
       refCode: `REF: PNJ-${stationNum}`,
       plateTag: isFirst ? '01 STARTING ANCHOR' : isLast ? `${stationNum} TERMINUS WAYPOINT` : `${stationNum} INTERMEDIATE STATION`,
       plateImage: plateImages[i % plateImages.length],
-      distanceMarker: isFirst ? '0.0 KM' : `+${legDistance.toFixed(1)} KM`,
+      distanceMarker: isFirst ? '0.0 KM' : `${cumulativeKm.toFixed(1)} KM`,
       distanceKm: Math.round(cumulativeKm * 10) / 10,
       legLabel: `STATION ${stationNum}`,
       bearing: `${spot.location.lat.toFixed(4)}°N ${spot.location.lng.toFixed(4)}°E`,
@@ -265,14 +332,22 @@ export function createCuratedTrail(params?: AIGenerateParams): RichTrail {
       elevationProfile: `+${i * 3 + 2}M`,
       curatorClue: spot.curatorNote,
       quarterContext: `COORDINATES: ${spot.location.lat.toFixed(4)}°N ${spot.location.lng.toFixed(4)}°E · FOOT TRAFFIC: ${spot.footTraffic.toUpperCase()} · NOISE: ${spot.noiseLevel.toUpperCase()}`,
-      nextWalkDistance: isLast ? '0.0 KM' : `${legDistance > 0 ? legDistance : 0.8} KM AWAY`,
-      nextWalkTime: isLast ? 'TRAIL COMPLETED' : `~${Math.round((spot.walkTimeFromCenterMin || 10) * 0.9)} MIN WALK`,
+      nextWalkDistance: isLast ? '0.0 KM' : `${nextLeg.toFixed(1)} KM AWAY`,
+      nextWalkTime: isLast ? 'TRAIL COMPLETED' : `~${Math.max(5, Math.round(nextLeg * 12))} MIN WALK`,
     };
   });
 
   const firstSpot = selectedSpots[0];
   const lastSpot = selectedSpots[selectedSpots.length - 1];
-  const title = `The ${firstSpot.category === 'coffee' ? 'Barista & Courtyard' : 'Artisan'} Path: ${firstSpot.shortName || firstSpot.name} to ${lastSpot.shortName || lastSpot.name}`;
+  // Rotate title templates for variety
+  const titleTemplates = [
+    (first: Spot, last: Spot) => `${first.shortName || first.name.split('/')[0].trim()} to ${last.shortName || last.name.split('/')[0].trim()}`,
+    (first: Spot) => `Morning in Fontainhas: ${first.shortName || first.name.split('/')[0].trim()} & Beyond`,
+    (_first: Spot, last: Spot) => `A Walk to ${last.shortName || last.name.split('/')[0].trim()} via the Quarter`,
+    (first: Spot, last: Spot) => `${first.category === 'coffee' ? 'Café Route' : 'Artisan Path'}: ${first.shortName || first.name.split('/')[0].trim()} → ${last.shortName || last.name.split('/')[0].trim()}`,
+  ];
+  const templateIdx = Math.floor(Date.now() / 1000) % titleTemplates.length;
+  const title = titleTemplates[templateIdx](firstSpot, lastSpot);
 
   return {
     ...FALLBACK_TRAIL,

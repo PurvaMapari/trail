@@ -50,10 +50,10 @@ export function CreateTrailForm({
   ];
 
   const distanceOptions = [
-    { value: 1.0, label: 'NEARBY (<1 KM)', envelope: '1.2 KM EXPEDITION' },
-    { value: 3.5, label: 'UP TO 3.5 KM', envelope: '3.2 KM EXPEDITION' },
-    { value: 5.0, label: 'UP TO 5.0 KM', envelope: '4.8 KM EXPEDITION' },
-    { value: 10.0, label: '10+ KM DEEP', envelope: '9.6 KM EXPEDITION' },
+    { value: 2.0, label: '2.0K', fullLabel: 'UP TO 2.0 KM', envelope: '1.9 KM EXPEDITION' },
+    { value: 3.5, label: '3.5K', fullLabel: 'UP TO 3.5 KM', envelope: '3.2 KM EXPEDITION' },
+    { value: 5.0, label: '5.0K', fullLabel: 'UP TO 5.0 KM', envelope: '4.8 KM EXPEDITION' },
+    { value: 8.0, label: '8.0K', fullLabel: 'UP TO 8.0 KM', envelope: '7.5 KM EXPEDITION' },
   ];
 
   const toggleInterest = (label: string) => {
@@ -139,11 +139,10 @@ export function CreateTrailForm({
                 type="button"
                 key={interest.id}
                 onClick={() => toggleInterest(interest.label)}
-                className={`inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-mono tracking-wider uppercase transition-all cursor-pointer ${
-                  isSelected
+                className={`inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-mono tracking-wider uppercase transition-all cursor-pointer ${isSelected
                     ? 'bg-[#183D2B] text-[#FAF8F3] font-bold shadow-xs'
                     : 'bg-[#ECE8DD]/50 text-[#183D2B]/80 border border-[#183D2B]/20 hover:bg-[#ECE8DD] hover:border-[#183D2B]/40'
-                }`}
+                  }`}
               >
                 {isSelected ? (
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -163,9 +162,35 @@ export function CreateTrailForm({
           <span className="font-bold text-[#183D2B] uppercase">
             03 {'//'} HOW MUCH TIME DO YOU HAVE?
           </span>
-          <span className="text-[#183D2B]/60 uppercase text-[10px]">
-            CADENCE CALCULATION
-          </span>
+          <div className="flex items-center gap-1 bg-[#ECE8DD] px-2 py-0.5 rounded-lg border border-[#183D2B]/15">
+            <button
+              type="button"
+              onClick={() => {
+                const nextMins = Math.max(15, formState.durationMinutes - 15);
+                const hours = Math.round((nextMins / 60) * 10) / 10;
+                onChange({ durationMinutes: nextMins, durationLabel: `${hours} HOURS` });
+              }}
+              className="w-5 h-5 rounded bg-white/70 hover:bg-[#183D2B] hover:text-white text-[#183D2B] flex items-center justify-center font-mono font-bold text-xs transition-colors cursor-pointer shadow-2xs"
+              title="Decrease time (-15 min)"
+            >
+              −
+            </button>
+            <span className="text-[#183D2B] font-bold text-xs font-mono px-1.5 min-w-[56px] text-center">
+              {formState.durationMinutes} MIN
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const nextMins = Math.min(480, formState.durationMinutes + 15);
+                const hours = Math.round((nextMins / 60) * 10) / 10;
+                onChange({ durationMinutes: nextMins, durationLabel: `${hours} HOURS` });
+              }}
+              className="w-5 h-5 rounded bg-[#183D2B] text-white hover:bg-[#4E6B48] flex items-center justify-center font-mono font-bold text-xs transition-colors cursor-pointer shadow-2xs"
+              title="Add time (+15 min)"
+            >
+              +
+            </button>
+          </div>
         </div>
 
         {/* Duration Cards */}
@@ -182,11 +207,10 @@ export function CreateTrailForm({
                     durationLabel: `${opt.num} ${opt.unit}`,
                   })
                 }
-                className={`relative p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                  isSelected
+                className={`relative p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${isSelected
                     ? 'border-[#183D2B] bg-[#EBF2EB]/50 shadow-xs ring-1 ring-[#183D2B]'
                     : 'border-[#183D2B]/15 bg-white/50 hover:bg-white hover:border-[#183D2B]/30'
-                }`}
+                  }`}
               >
                 {isSelected && (
                   <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#E36A2E]" />
@@ -198,9 +222,8 @@ export function CreateTrailForm({
                   {opt.unit}
                 </span>
                 <span
-                  className={`text-[9px] font-mono uppercase tracking-widest mt-1 ${
-                    isSelected ? 'text-[#E36A2E] font-bold' : 'text-[#183D2B]/50'
-                  }`}
+                  className={`text-[9px] font-mono uppercase tracking-widest mt-1 ${isSelected ? 'text-[#E36A2E] font-bold' : 'text-[#183D2B]/50'
+                    }`}
                 >
                   {opt.sub}
                 </span>
@@ -224,35 +247,68 @@ export function CreateTrailForm({
           <span className="font-bold text-[#183D2B] uppercase">
             04 {'//'} HOW FAR DO YOU WANT TO GO?
           </span>
-          <span className="text-[#183D2B]/60 uppercase text-[10px]">
-            RADIAL RANGE
-          </span>
+          <div className="flex items-center gap-1 bg-[#ECE8DD] px-2 py-0.5 rounded-lg border border-[#183D2B]/15">
+            <button
+              type="button"
+              onClick={() => {
+                const nextDist = Math.max(1.0, Math.round((formState.distanceKm - 0.5) * 10) / 10);
+                onChange({ distanceKm: nextDist, distanceLabel: `UP TO ${nextDist.toFixed(1)} KM` });
+              }}
+              className="w-5 h-5 rounded bg-white/70 hover:bg-[#183D2B] hover:text-white text-[#183D2B] flex items-center justify-center font-mono font-bold text-xs transition-colors cursor-pointer shadow-2xs"
+              title="Decrease distance (-0.5 KM)"
+            >
+              −
+            </button>
+            <span className="text-[#183D2B] font-bold text-xs font-mono px-1.5 min-w-[50px] text-center">
+              {formState.distanceKm.toFixed(1)} KM
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const nextDist = Math.min(15.0, Math.round((formState.distanceKm + 0.5) * 10) / 10);
+                onChange({ distanceKm: nextDist, distanceLabel: `UP TO ${nextDist.toFixed(1)} KM` });
+              }}
+              className="w-5 h-5 rounded bg-[#183D2B] text-white hover:bg-[#4E6B48] flex items-center justify-center font-mono font-bold text-xs transition-colors cursor-pointer shadow-2xs"
+              title="Add distance (+0.5 KM)"
+            >
+              +
+            </button>
+          </div>
         </div>
 
-        {/* Distance Range Selector Pills */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {/* Distance Range Selector Pills (styled like Picture) */}
+        <div className="grid grid-cols-4 gap-2">
           {distanceOptions.map((opt) => {
-            const isSelected = formState.distanceKm === opt.value;
+            const isSelected = Math.abs(formState.distanceKm - opt.value) < 0.1;
             return (
               <button
                 type="button"
-                key={opt.value}
+                key={opt.label}
                 onClick={() =>
                   onChange({
                     distanceKm: opt.value,
-                    distanceLabel: opt.label,
+                    distanceLabel: opt.fullLabel,
                   })
                 }
                 className={`py-2 px-3 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer text-center ${
                   isSelected
                     ? 'bg-[#183D2B] text-[#FAF8F3] shadow-xs'
-                    : 'bg-[#ECE8DD]/50 text-[#183D2B]/75 border border-[#183D2B]/15 hover:bg-[#ECE8DD]'
+                    : 'bg-[#ECE8DD] text-[#183D2B]/70 hover:bg-[#183D2B]/10'
                 }`}
               >
                 {opt.label}
               </button>
             );
           })}
+        </div>
+
+        {/* Pace & Distance Subline (matching Picture) */}
+        <div className="flex items-center justify-between text-[11px] text-[#183D2B]/75 font-mono px-0.5">
+          <span className="flex items-center gap-1 font-medium">
+            <span>🚶</span>
+            <span>Up to {formState.distanceKm.toFixed(1)} KM</span>
+          </span>
+          <span className="text-[#183D2B]/60">~{Math.round(formState.distanceKm * 18)}m pace</span>
         </div>
 
         {/* Radial Envelope Detail Card */}

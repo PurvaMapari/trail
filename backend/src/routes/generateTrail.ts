@@ -138,7 +138,7 @@ router.post('/', async (req: Request, res: Response) => {
     const headerApiKey = (req.headers['x-gemini-api-key'] as string)?.trim() || undefined;
     const headerModel = (req.headers['x-gemini-model'] as string)?.trim() || undefined;
     const effectiveApiKey = headerApiKey || bodyApiKey?.trim() || process.env.GEMINI_API_KEY?.trim();
-    const effectiveModel = headerModel || bodyModel?.trim() || process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
+    const effectiveModel = headerModel || bodyModel?.trim() || process.env.GEMINI_MODEL?.trim() || 'gemini-1.5-flash';
 
     if (effectiveApiKey) {
       try {
@@ -189,12 +189,16 @@ router.post('/', async (req: Request, res: Response) => {
     const selectedSpots = topSpots.length >= 3 ? topSpots.slice(0, 4) : curated_spots.slice(0, 4);
 
     const plateImages = ['/images/td-plate-01.jpg', '/images/active-trail/bookstore.jpg', '/images/active-trail/next_thumb.jpg', '/images/td-plate-04.jpg'];
+    // Precompute legs so each stop knows the distance to the next stop
+    const legDistances = selectedSpots.map((_, i) =>
+      i === 0 ? 0 : Math.round((0.6 + i * 0.3) * 10) / 10
+    );
     let cumulativeKm = 0;
     const detailedStops = selectedSpots.map((spot, i) => {
       const isFirst = i === 0;
       const isLast = i === selectedSpots.length - 1;
-      const legDist = isFirst ? 0 : Math.round((0.5 + i * 0.4) * 10) / 10;
-      cumulativeKm += legDist;
+      cumulativeKm += legDistances[i];
+      const nextLeg = !isLast ? legDistances[i + 1] : 0;
       const stationNum = String(i + 1).padStart(2, '0');
 
       return {
@@ -208,7 +212,7 @@ router.post('/', async (req: Request, res: Response) => {
         refCode: `REF: PNJ-${stationNum}`,
         plateTag: isFirst ? '01 STARTING ANCHOR' : isLast ? `${stationNum} TERMINUS WAYPOINT` : `${stationNum} INTERMEDIATE STATION`,
         plateImage: plateImages[i % plateImages.length],
-        distanceMarker: isFirst ? '0.0 KM' : `+${legDist.toFixed(1)} KM`,
+        distanceMarker: isFirst ? '0.0 KM' : `${cumulativeKm.toFixed(1)} KM`,
         distanceKm: Math.round(cumulativeKm * 10) / 10,
         legLabel: `STATION ${stationNum}`,
         bearing: `${spot.location.lat.toFixed(4)}°N ${spot.location.lng.toFixed(4)}°E`,
@@ -218,8 +222,8 @@ router.post('/', async (req: Request, res: Response) => {
         elevationProfile: `+${i * 3 + 2}M`,
         curatorClue: spot.curatorNote,
         quarterContext: `COORDINATES: ${spot.location.lat.toFixed(4)}°N ${spot.location.lng.toFixed(4)}°E · FOOT TRAFFIC: ${spot.footTraffic.toUpperCase()} · NOISE: ${spot.noiseLevel.toUpperCase()}`,
-        nextWalkDistance: isLast ? '0.0 KM' : `${legDist > 0 ? legDist : 0.8} KM AWAY`,
-        nextWalkTime: isLast ? 'TRAIL COMPLETED' : `~${Math.round((spot.walkTimeFromCenterMin || 10) * 0.9)} MIN WALK`,
+        nextWalkDistance: isLast ? '0.0 KM' : `${nextLeg.toFixed(1)} KM AWAY`,
+        nextWalkTime: isLast ? 'TRAIL COMPLETED' : `~${Math.max(5, Math.round(nextLeg * 12))} MIN WALK`,
       };
     });
 

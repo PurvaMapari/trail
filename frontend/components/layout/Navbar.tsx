@@ -3,15 +3,24 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, Compass, ArrowRight, PlusCircle, Layers } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Menu, X, Compass, ArrowRight, PlusCircle } from 'lucide-react';
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname() || '';
+
+  const isHomeActive = pathname === '/';
+  const isExploreActive =
+    pathname === '/explore' ||
+    pathname.startsWith('/trails') ||
+    pathname.startsWith('/active-trail');
+  const isCreateActive = pathname.startsWith('/create-trail');
+  const isAIDiscoveryActive = pathname.startsWith('/ai-discovery');
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#183D2B]/10 bg-[#F4F2EB]/95 backdrop-blur-md transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand Logo */}
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
           <Image
@@ -28,24 +37,65 @@ export function Navbar() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-7 text-xs font-mono uppercase tracking-wider text-[#183D2B]/75">
-          <Link href="/" className="hover:text-[#183D2B] transition-colors">
-            Home
+        <nav className="hidden md:flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#183D2B]/75">
+          <Link
+            href="/"
+            className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
+              isHomeActive
+                ? 'bg-[#183D2B] text-[#FAF8F3] font-bold shadow-xs'
+                : 'text-[#183D2B]/75 hover:text-[#183D2B] hover:bg-[#183D2B]/8'
+            }`}
+          >
+            {isHomeActive && (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E36A2E] animate-pulse shrink-0" />
+            )}
+            <span>Home</span>
           </Link>
-          <Link href="/explore" className="hover:text-[#183D2B] transition-colors">
-            Explore Trails
+
+          <Link
+            href="/explore"
+            className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
+              isExploreActive
+                ? 'bg-[#183D2B] text-[#FAF8F3] font-bold shadow-xs'
+                : 'text-[#183D2B]/75 hover:text-[#183D2B] hover:bg-[#183D2B]/8'
+            }`}
+          >
+            {isExploreActive && (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E36A2E] animate-pulse shrink-0" />
+            )}
+            <span>Explore Trails</span>
           </Link>
-          <Link href="/create-trail" className="hover:text-[#183D2B] transition-colors flex items-center gap-1">
-            <PlusCircle className="w-3.5 h-3.5 text-[#4E6B48]" />
-            Create Trail
+
+          <Link
+            href="/create-trail"
+            className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
+              isCreateActive
+                ? 'bg-[#183D2B] text-[#FAF8F3] font-bold shadow-xs'
+                : 'text-[#183D2B]/75 hover:text-[#183D2B] hover:bg-[#183D2B]/8'
+            }`}
+          >
+            {isCreateActive ? (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E36A2E] animate-pulse shrink-0" />
+            ) : (
+              <PlusCircle className="w-3.5 h-3.5 text-[#4E6B48]" />
+            )}
+            <span>Create Trail</span>
           </Link>
-          <Link href="/ai-discovery" className="hover:text-[#183D2B] transition-colors flex items-center gap-1">
-            <Compass className="w-3.5 h-3.5 text-[#E36A2E]" />
-            AI Curator
-          </Link>
-          <Link href="/wireframes" className="hover:text-[#183D2B] transition-colors flex items-center gap-1 font-semibold text-[#E36A2E]">
-            <Layers className="w-3.5 h-3.5" />
-            Wireframes
+
+          <Link
+            href="/ai-discovery"
+            className={`px-3.5 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
+              isAIDiscoveryActive
+                ? 'bg-[#183D2B] text-[#FAF8F3] font-bold shadow-xs'
+                : 'text-[#183D2B]/75 hover:text-[#183D2B] hover:bg-[#183D2B]/8'
+            }`}
+          >
+            {isAIDiscoveryActive ? (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E36A2E] animate-pulse shrink-0" />
+            ) : (
+              <Compass className="w-3.5 h-3.5 text-[#E36A2E]" />
+            )}
+            <span>AI Discovery</span>
           </Link>
         </nav>
 
@@ -74,44 +124,71 @@ export function Navbar() {
       {/* Mobile dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden border-b border-[#183D2B]/10 bg-[#F4F2EB] px-6 py-6 space-y-4 animate-in fade-in slide-in-from-top-2">
-          <div className="flex flex-col space-y-3 text-sm font-mono uppercase tracking-wider text-[#183D2B]">
+          <div className="flex flex-col space-y-2 text-sm font-mono uppercase tracking-wider text-[#183D2B]">
             <Link
               href="/"
               onClick={() => setMobileMenuOpen(false)}
-              className="py-1.5 border-b border-[#183D2B]/10"
+              className={`py-2 px-3 rounded-lg flex items-center justify-between transition-all ${
+                isHomeActive
+                  ? 'bg-[#183D2B] text-[#FAF8F3] font-bold'
+                  : 'hover:bg-[#183D2B]/5 text-[#183D2B]'
+              }`}
             >
-              Home
+              <span>Home</span>
+              {isHomeActive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E36A2E]" />
+              )}
             </Link>
+
             <Link
               href="/explore"
               onClick={() => setMobileMenuOpen(false)}
-              className="py-1.5 border-b border-[#183D2B]/10"
+              className={`py-2 px-3 rounded-lg flex items-center justify-between transition-all ${
+                isExploreActive
+                  ? 'bg-[#183D2B] text-[#FAF8F3] font-bold'
+                  : 'hover:bg-[#183D2B]/5 text-[#183D2B]'
+              }`}
             >
-              Explore Trails
+              <span>Explore Trails</span>
+              {isExploreActive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E36A2E]" />
+              )}
             </Link>
+
             <Link
               href="/create-trail"
               onClick={() => setMobileMenuOpen(false)}
-              className="py-1.5 border-b border-[#183D2B]/10 flex items-center justify-between"
+              className={`py-2 px-3 rounded-lg flex items-center justify-between transition-all ${
+                isCreateActive
+                  ? 'bg-[#183D2B] text-[#FAF8F3] font-bold'
+                  : 'hover:bg-[#183D2B]/5 text-[#183D2B]'
+              }`}
             >
-              <span>Create Trail</span>
-              <PlusCircle className="w-4 h-4 text-[#4E6B48]" />
+              <span className="flex items-center gap-1.5">
+                <PlusCircle className="w-4 h-4 text-[#4E6B48]" />
+                <span>Create Trail</span>
+              </span>
+              {isCreateActive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E36A2E]" />
+              )}
             </Link>
+
             <Link
               href="/ai-discovery"
               onClick={() => setMobileMenuOpen(false)}
-              className="py-1.5 border-b border-[#183D2B]/10 flex items-center justify-between"
+              className={`py-2 px-3 rounded-lg flex items-center justify-between transition-all ${
+                isAIDiscoveryActive
+                  ? 'bg-[#183D2B] text-[#FAF8F3] font-bold'
+                  : 'hover:bg-[#183D2B]/5 text-[#183D2B]'
+              }`}
             >
-              <span>AI Curator</span>
-              <Compass className="w-4 h-4 text-[#E36A2E]" />
-            </Link>
-            <Link
-              href="/wireframes"
-              onClick={() => setMobileMenuOpen(false)}
-              className="py-1.5 border-b border-[#183D2B]/10 flex items-center justify-between text-[#E36A2E] font-bold"
-            >
-              <span>Screen Wireframes</span>
-              <Layers className="w-4 h-4" />
+              <span className="flex items-center gap-1.5">
+                <Compass className="w-4 h-4 text-[#E36A2E]" />
+                <span>AI Discovery</span>
+              </span>
+              {isAIDiscoveryActive && (
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E36A2E]" />
+              )}
             </Link>
           </div>
 
@@ -119,7 +196,7 @@ export function Navbar() {
             <Link
               href="/explore"
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-full bg-[#183D2B] text-[#F4F2EB] text-xs font-mono uppercase tracking-wider"
+              className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-full bg-[#183D2B] text-[#F4F2EB] text-xs font-mono uppercase tracking-wider font-semibold"
             >
               <span>Start a Trail</span>
               <ArrowRight className="w-3.5 h-3.5 text-[#E36A2E]" />

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CornerDownLeft, Sparkles, Tag } from 'lucide-react';
+import { Sparkles, Tag } from 'lucide-react';
 
 interface AIIntentInputProps {
   prompt: string;
@@ -37,18 +37,8 @@ export function AIIntentInput({
       <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono tracking-wider pb-1">
         <div className="flex items-center gap-2">
           <span className="font-bold text-[#183D2B] uppercase">
-            01 {'//'} NATURAL LANGUAGE EXPEDITION INTENT
+            01 {'//'} YOUR TRAIL INTENT
           </span>
-          <span className="hidden sm:inline text-[#183D2B]/30">|</span>
-          <span className="hidden sm:inline text-[#183D2B]/60 uppercase">
-            PRE-TRAINED PEDESTRIAN TELEMETRY
-          </span>
-        </div>
-
-        {/* Shortcut indicator (not a button) */}
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#ECE8DD]/80 text-[#183D2B]/60 font-mono text-[10px] tracking-wider">
-          <CornerDownLeft className="w-3 h-3 text-[#183D2B]/40" />
-          <span>[ ⌘ / CTRL + ↵ ]</span>
         </div>
       </div>
 
@@ -70,12 +60,12 @@ export function AIIntentInput({
             {prompt.trim() ? (
               <>
                 <span className="w-2 h-2 rounded-full bg-[#E36A2E] animate-pulse shrink-0" />
-                <span className="text-[#E36A2E] font-medium">INTENT PARSER ACTIVE · LATENT CADENCE DETECTED</span>
+                <span className="text-[#E36A2E] font-medium">{prompt.length} characters · Ready to synthesize</span>
               </>
             ) : (
               <>
                 <span className="w-2 h-2 rounded-full bg-[#183D2B]/30 shrink-0" />
-                <span className="text-[#183D2B]/50">READY TO SYNTHESIZE · {prompt.length} CHARS</span>
+                <span className="text-[#183D2B]/50">Describe your ideal walk above</span>
               </>
             )}
           </div>
@@ -104,7 +94,7 @@ export function AIIntentInput({
       {/* Seed Intents */}
       <div className="space-y-2 pt-1">
         <span className="text-[10px] font-mono uppercase tracking-wider text-[#183D2B]/60 font-bold block">
-          SEED INTENTS FOR PANAJI URBAN MATRIX
+          TRY AN EXAMPLE
         </span>
 
         <div className="flex flex-wrap gap-2">

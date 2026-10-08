@@ -62,13 +62,25 @@ function synthesizeFromCurated(
 
   scored.sort((a, b) => b.score - a.score);
 
-  // Pick 3-4 diverse spots
+  // Add controlled randomness: jitter scores slightly and shuffle top candidates
+  // This ensures different trails on each call with same prompt
+  const jitterSeed = Date.now() % 1000;
+  const topN = Math.min(8, scored.length);
+  const topPool = scored.slice(0, topN).map((item, idx) => ({
+    ...item,
+    score: item.score + (Math.sin(jitterSeed + idx * 137.5) * 0.8),
+  }));
+  topPool.sort((a, b) => b.score - a.score);
+
+  // Pick 3-4 diverse spots with randomized starting index within top pool
+  const startOffset = Math.floor(Math.random() * Math.min(3, topPool.length));
+  const reordered = [...topPool.slice(startOffset), ...topPool.slice(0, startOffset)];
+
   const selectedSpots: Spot[] = [];
   const usedCategories = new Set<string>();
 
-  for (const item of scored) {
+  for (const item of reordered) {
     if (selectedSpots.length >= 4) break;
-    // Prefer diverse categories across the trail
     if (!usedCategories.has(item.spot.category) || selectedSpots.length < 2) {
       selectedSpots.push(item.spot);
       usedCategories.add(item.spot.category);
@@ -76,7 +88,7 @@ function synthesizeFromCurated(
   }
 
   // If still less than 3, backfill from remaining
-  for (const item of scored) {
+  for (const item of reordered) {
     if (selectedSpots.length >= 4) break;
     if (!selectedSpots.some((s) => s.id === item.spot.id)) {
       selectedSpots.push(item.spot);
@@ -90,12 +102,16 @@ function synthesizeFromCurated(
     '/images/td-plate-04.jpg',
   ];
 
+  // Precompute legs so each stop knows the distance to the next stop
+  const legDistances = selectedSpots.map((_, i) =>
+    i === 0 ? 0 : Math.round((0.6 + i * 0.3) * 10) / 10
+  );
   let cumulativeDistance = 0;
   const detailedStops: DetailedStop[] = selectedSpots.map((spot, i) => {
     const isFirst = i === 0;
     const isLast = i === selectedSpots.length - 1;
-    const legDistance = isFirst ? 0 : Math.round((0.5 + (i * 0.4)) * 10) / 10;
-    cumulativeDistance += legDistance;
+    cumulativeDistance += legDistances[i];
+    const nextLeg = !isLast ? legDistances[i + 1] : 0;
 
     const stationNum = String(i + 1).padStart(2, '0');
     const latStr = `${spot.location.lat.toFixed(4)}°N`;
@@ -112,7 +128,7 @@ function synthesizeFromCurated(
       refCode: `REF: PNJ-${stationNum}`,
       plateTag: isFirst ? '01 STARTING ANCHOR' : isLast ? `${stationNum} TERMINUS WAYPOINT` : `${stationNum} INTERMEDIATE STATION`,
       plateImage: plateImages[i % plateImages.length],
-      distanceMarker: isFirst ? '0.0 KM' : `+${legDistance.toFixed(1)} KM`,
+      distanceMarker: isFirst ? '0.0 KM' : `${cumulativeDistance.toFixed(1)} KM`,
       distanceKm: Math.round(cumulativeDistance * 10) / 10,
       legLabel: `STATION ${stationNum}`,
       bearing: `${latStr} ${lngStr}`,
@@ -122,8 +138,8 @@ function synthesizeFromCurated(
       elevationProfile: `+${(i * 3) + 2}M`,
       curatorClue: spot.curatorNote,
       quarterContext: `COORDINATES: ${latStr} ${lngStr} · FOOT TRAFFIC: ${spot.footTraffic.toUpperCase()} · NOISE: ${spot.noiseLevel.toUpperCase()}`,
-      nextWalkDistance: isLast ? '0.0 KM' : `${legDistance > 0 ? legDistance : 0.8} KM AWAY`,
-      nextWalkTime: isLast ? 'TRAIL COMPLETED' : `~${Math.round((spot.walkTimeFromCenterMin || 10) * 0.9)} MIN WALK`,
+      nextWalkDistance: isLast ? '0.0 KM' : `${nextLeg.toFixed(1)} KM AWAY`,
+      nextWalkTime: isLast ? 'TRAIL COMPLETED' : `~${Math.max(5, Math.round(nextLeg * 12))} MIN WALK`,
     };
   });
 
@@ -133,8 +149,15 @@ function synthesizeFromCurated(
   // Determine Title based on stops and tags
   const firstSpot = selectedSpots[0];
   const lastSpot = selectedSpots[selectedSpots.length - 1];
-  const titleKeywords = userTags.slice(0, 3).join(', ');
-  const title = `The ${firstSpot?.category === 'coffee' ? 'Barista & Canvas' : 'Artisan'} Path: ${firstSpot?.shortName || firstSpot?.name || 'Panaji'} to ${lastSpot?.shortName || lastSpot?.name || 'Riverfront'}`;
+  // Vary title templates to prevent repetition
+  const titleTemplates = [
+    (first: Spot, last: Spot) => `${first.shortName || first.name.split('/')[0].trim()} to ${last.shortName || last.name.split('/')[0].trim()}`,
+    (first: Spot) => `Morning in Fontainhas: ${first.shortName || first.name.split('/')[0].trim()} & Beyond`,
+    (_first: Spot, last: Spot) => `A Walk to ${last.shortName || last.name.split('/')[0].trim()} via the Quarter`,
+    (first: Spot, last: Spot) => `${first.category === 'coffee' ? 'Café Route' : 'Artisan Path'}: ${first.shortName || first.name.split('/')[0].trim()} → ${last.shortName || last.name.split('/')[0].trim()}`,
+  ];
+  const templateIdx = Math.floor(Date.now() / 1000) % titleTemplates.length;
+  const title = titleTemplates[templateIdx](firstSpot, lastSpot);
 
   return {
     id: `ai-trail-${Date.now()}`,
@@ -180,9 +203,9 @@ async function callGeminiForTrail(
   preferredModel?: string
 ): Promise<RichTrail> {
   const models = [
-    preferredModel?.trim() || 'gemini-2.5-flash',
-    'gemini-2.5-flash',
-    'gemini-2.5-pro',
+    preferredModel?.trim() || 'gemini-1.5-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
     'gemini-flash-latest',
   ];
 
@@ -336,7 +359,7 @@ export async function POST(req: NextRequest) {
       body.model?.trim() ||
       req.headers.get('x-gemini-model')?.trim() ||
       process.env.GEMINI_MODEL?.trim() ||
-      'gemini-2.5-flash';
+      'gemini-1.5-flash';
 
     // 1. If API key exists, attempt live Gemini synthesis
     if (apiKey) {

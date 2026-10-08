@@ -1,15 +1,22 @@
 'use client';
-
-import React, { Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { FieldDeskFooter } from '@/components/layout/FieldDeskFooter';
-import { TrailCuratorStudio } from '@/components/curator/TrailCuratorStudio';
-import { Sparkles, MapPin, Footprints, ShieldCheck } from 'lucide-react';
-import { CuratorLocation, CuratorTime, CuratorMood, CuratorTravelStyle } from '@/types/curator';
+
+import { AIDiscoveryHeader } from '@/components/ai-discovery/AIDiscoveryHeader';
+import { AIIntentInput } from '@/components/ai-discovery/AIIntentInput';
+import {
+  AICalibrationCard,
+  AICalibrationState
+} from '@/components/ai-discovery/AICalibrationCard';
+import { AISynthesizedDossier } from '@/components/ai-discovery/AISynthesizedDossier';
+import { generateTrail, createCuratedTrail } from '@/lib/api';
+import { RichTrail } from '@/data/trails';
+import { AlertCircle } from 'lucide-react';
 
 function AIDiscoveryContent() {
   const searchParams = useSearchParams();
-  const promptParam = searchParams.get('prompt') || '';
+  // Input State initialized to match the Figma reference
+  const [prompt, setPrompt] = useState('');
 
   // Parse prompt keywords if arriving from explore or hero
   let initialLocation: CuratorLocation = 'Panaji (Fontainhas & Altinho)';
@@ -25,10 +32,20 @@ function AIDiscoveryContent() {
     if (q.includes('altinho')) initialLocation = 'Altinho Hilltop & Viewpoints';
     if (q.includes('campal')) initialLocation = 'Campal & Mandovi Waterfront';
 
-    if (q.includes('coffee') || q.includes('cafe')) initialInterests.push('Coffee & Roasteries');
-    if (q.includes('book') || q.includes('read')) initialInterests.push('Books & Prints');
-    if (q.includes('mural') || q.includes('art')) initialInterests.push('Art & Culture');
-    if (q.includes('sunset') || q.includes('view')) initialInterests.push('Viewpoints & Vistas');
+  useEffect(() => {
+    const qPrompt = searchParams.get('prompt');
+    if (qPrompt && !prompt) {
+      setPrompt(qPrompt);
+      const lower = qPrompt.toLowerCase();
+      if (lower.includes('coffee') || lower.includes('espresso')) {
+        setCalibration((prev) => ({ ...prev, tags: ['Coffee', 'Books', 'Quiet'] }));
+      } else if (lower.includes('art') || lower.includes('mural')) {
+        setCalibration((prev) => ({ ...prev, tags: ['Art', 'Murals', 'Architecture'] }));
+      } else if (lower.includes('sunset') || lower.includes('river')) {
+        setCalibration((prev) => ({ ...prev, tags: ['Viewpoints', 'Sunset', 'River Walk'] }));
+      }
+    }
+  }, [searchParams]);
 
     if (q.includes('relaxed') || q.includes('slow')) initialMood = 'Relaxed';
     if (q.includes('quiet') || q.includes('peaceful')) initialMood = 'Contemplative';
@@ -87,8 +104,6 @@ function AIDiscoveryContent() {
           }}
         />
       </main>
-
-      <FieldDeskFooter />
     </div>
   );
 }
@@ -97,8 +112,11 @@ export default function AIDiscoveryPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#F4F2EB] flex items-center justify-center">
-          <div className="text-xs font-mono text-[#183D2B]/60 uppercase">Loading AI Trail Curator...</div>
+        <div className="min-h-screen bg-[#F4F2EB] flex items-center justify-center p-8">
+          <div className="flex items-center gap-3 text-xs font-mono text-[#183D2B]/70">
+            <div className="w-4 h-4 rounded-full border-2 border-[#183D2B] border-t-transparent animate-spin" />
+            <span>CALIBRATING SENSORS &amp; TELEMETRY...</span>
+          </div>
         </div>
       }
     >

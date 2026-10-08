@@ -15,7 +15,7 @@ import {
   Info,
   Maximize2
 } from 'lucide-react';
-import { mockTrails, RichTrail } from '@/data/trails';
+import { mockTrails, RichTrail, getActiveTrailStops } from '@/data/trails';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -134,21 +134,9 @@ export default function TrailDetailsPage({ params }: PageProps) {
   const otherTrails = mockTrails.filter((t) => t.id !== trail.id && t.id !== 'demo').slice(0, 3);
 
   // Fallback detailed stops if not explicitly present on non-featured trails
-  const detailedStops = trail.detailedStops || trail.stops.map((s, idx) => ({
-    id: s.id,
-    name: s.name,
-    categoryTag: trail.category.toUpperCase(),
-    estimatedMinutes: s.estimatedMinutes || 25,
-    locationLabel: `${trail.city.toUpperCase()} SECTOR 0${idx + 1}`,
-    plateTag: `PLATE // 0${idx + 1}`,
-    plateImage: trail.coverImage || '/images/explore-card-1.jpg',
-    distanceMarker: idx === 0 ? '0.0 KM · START' : `+${(idx * 0.8).toFixed(1)} KM`,
-    legLabel: `STATION 0${idx + 1}`,
-    bearing: '042° NE',
-    recommendedItem: 'LOCAL SPECIALTY & HISTORIC WALKING ROUTE',
-    description: s.description,
-    fieldNote: 'Tactile field observation verified by local resident explorers.',
-  }));
+  const detailedStops = (trail.detailedStops && trail.detailedStops.length > 0)
+    ? trail.detailedStops
+    : getActiveTrailStops(trail);
 
   return (
     <div className="min-h-screen bg-[#F4F2EB] text-[#183D2B] pb-24">
@@ -505,11 +493,11 @@ export default function TrailDetailsPage({ params }: PageProps) {
             return (
               <div
                 key={stop.id}
-                className="rounded-2xl border border-[#183D2B]/15 bg-white overflow-hidden shadow-sm grid lg:grid-cols-12 items-center"
+                className="rounded-2xl border border-[#183D2B]/15 bg-white overflow-hidden shadow-sm grid lg:grid-cols-12 items-stretch"
               >
                 {/* Photo Plate (Left if even, Right if odd) */}
                 <div
-                  className={`lg:col-span-5 relative w-full aspect-[4/3] bg-[#E7E3D7] ${
+                  className={`lg:col-span-5 relative w-full min-h-[260px] lg:min-h-full bg-[#E7E3D7] ${
                     isPhotoLeft ? 'lg:order-1' : 'lg:order-2'
                   }`}
                 >
@@ -518,7 +506,7 @@ export default function TrailDetailsPage({ params }: PageProps) {
                     alt={stop.name}
                     fill
                     sizes="(max-width: 1024px) 100vw, 42vw"
-                    className="object-cover"
+                    className="object-cover object-center"
                   />
                   <div className="absolute top-3 left-3 bg-[#183D2B]/90 text-white px-2.5 py-1 rounded text-[9px] font-mono font-bold uppercase tracking-wider">
                     {stop.plateTag || `PLATE // 0${index + 1}`}
@@ -578,10 +566,12 @@ export default function TrailDetailsPage({ params }: PageProps) {
 
                   {/* Stop Footer Info */}
                   <div className="pt-3 border-t border-[#183D2B]/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[10px] font-mono text-[#183D2B]/60 uppercase">
-                    <span className="truncate">
-                      RECOMMENDED: {stop.recommendedItem || 'REGIONAL ARTISAN COFFEE & SNACKS'}
-                    </span>
-                    <span className="font-semibold text-[#183D2B] shrink-0">
+                    {stop.recommendedItem && (
+                      <span className="truncate">
+                        RECOMMENDED: {stop.recommendedItem}
+                      </span>
+                    )}
+                    <span className="font-semibold text-[#183D2B] shrink-0 ml-auto">
                       BEARING: {stop.bearing || '042° NE'}
                     </span>
                   </div>
@@ -724,34 +714,6 @@ export default function TrailDetailsPage({ params }: PageProps) {
               <Bookmark className="w-3.5 h-3.5" />
               <span>{isSaved ? 'SAVED' : 'SAVE FOR LATER'}</span>
             </button>
-          </div>
-        </div>
-      </section>
-
-      {/* 6.5. Bottom CTA Banner */}
-      <section className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <div className="rounded-2xl bg-[#183D2B] text-white p-8 sm:p-12 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
-          <div className="relative z-10 max-w-2xl space-y-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-[#E36A2E] font-bold block">
-              EXPEDITION ACTIVATION
-            </span>
-            <h3 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight">
-              Ready to follow the trail?
-            </h3>
-            <p className="text-xs sm:text-sm text-white/80 font-sans leading-relaxed">
-              Launch the active field navigation instrument to step through stations with live discovery notes, coordinates, and local clues.
-            </p>
-          </div>
-
-          <div className="relative z-10 shrink-0 w-full sm:w-auto">
-            <Link
-              href={"/active-trail?trail=" + trail.id}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-[#E36A2E] hover:bg-[#E36A2E]/90 text-white text-xs font-mono uppercase tracking-wider font-bold transition-all shadow-md text-center"
-            >
-              <Compass className="w-4 h-4" />
-              <span>START ACTIVE TRAIL</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
           </div>
         </div>
       </section>
