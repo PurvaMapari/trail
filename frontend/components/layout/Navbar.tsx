@@ -41,7 +41,7 @@ export function Navbar() {
           </Link>
           <Link href="/ai-discovery" className="hover:text-[#183D2B] transition-colors flex items-center gap-1">
             <Compass className="w-3.5 h-3.5 text-[#E36A2E]" />
-            AI Discovery
+            AI Curator
           </Link>
           <Link href="/wireframes" className="hover:text-[#183D2B] transition-colors flex items-center gap-1 font-semibold text-[#E36A2E]">
             <Layers className="w-3.5 h-3.5" />
@@ -102,7 +102,7 @@ export function Navbar() {
               onClick={() => setMobileMenuOpen(false)}
               className="py-1.5 border-b border-[#183D2B]/10 flex items-center justify-between"
             >
-              <span>AI Discovery</span>
+              <span>AI Curator</span>
               <Compass className="w-4 h-4 text-[#E36A2E]" />
             </Link>
             <Link

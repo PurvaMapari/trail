@@ -8,6 +8,7 @@ import { Search, MapPin, ArrowRight, Bookmark, Compass, Sparkles, SlidersHorizon
 import { mockTrails } from '@/data/trails';
 import { TrailCard } from '@/components/trails/TrailCard';
 import { TrailCategory } from '@/types/trail';
+import { CustomDropdown } from '@/components/ui/CustomDropdown';
 
 const categoriesList: { id: TrailCategory; label: string }[] = [
   { id: 'all', label: 'All Trails' },
@@ -126,17 +127,12 @@ function ExploreContent() {
 
             {/* Duration Selector */}
             <div className="flex items-center gap-2">
-              <select
+              <CustomDropdown
+                options={durationOptions}
                 value={selectedDuration}
-                onChange={(e) => setSelectedDuration(e.target.value)}
-                className="px-4 py-3 rounded-xl border border-[#183D2B]/15 bg-white text-xs font-mono text-[#183D2B] focus:outline-none focus:ring-2 focus:ring-[#183D2B] shadow-sm cursor-pointer"
-              >
-                {durationOptions.map((dur) => (
-                  <option key={dur} value={dur}>
-                    {dur}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedDuration}
+                className="w-40 sm:w-44"
+              />
 
               {isFiltered && (
                 <button

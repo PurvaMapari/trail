@@ -1,180 +1,108 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { FieldDeskFooter } from '@/components/layout/FieldDeskFooter';
-import { AIDiscoveryHeader } from '@/components/ai-discovery/AIDiscoveryHeader';
-import { AIIntentInput } from '@/components/ai-discovery/AIIntentInput';
-import {
-  AICalibrationCard,
-  AICalibrationState
-} from '@/components/ai-discovery/AICalibrationCard';
-import { AISynthesizedDossier } from '@/components/ai-discovery/AISynthesizedDossier';
-import { generateTrail, createCuratedTrail } from '@/lib/api';
-import { RichTrail } from '@/data/trails';
-import { AlertCircle } from 'lucide-react';
+import { TrailCuratorStudio } from '@/components/curator/TrailCuratorStudio';
+import { Sparkles, MapPin, Footprints, ShieldCheck } from 'lucide-react';
+import { CuratorLocation, CuratorTime, CuratorMood, CuratorTravelStyle } from '@/types/curator';
 
-export default function AIDiscoveryPage() {
-  // Input State initialized to match the Figma reference
-  const [prompt, setPrompt] = useState('');
+function AIDiscoveryContent() {
+  const searchParams = useSearchParams();
+  const promptParam = searchParams.get('prompt') || '';
 
-  // Calibration State
-  const [calibration, setCalibration] = useState<AICalibrationState>({
-    locus: 'Panaji, Goa',
-    locusSub: 'Fontainhas / Latin Quarter Core',
-    timeHours: 2.0,
-    tags: ['Coffee', 'Art', 'Quiet'],
-    maxDistanceKm: 5.0,
-  });
+  // Parse prompt keywords if arriving from explore or hero
+  let initialLocation: CuratorLocation = 'Panaji (Fontainhas & Altinho)';
+  let initialInterests = ['Art & Culture', 'Coffee & Roasteries', 'Heritage Architecture'];
+  let initialMood: CuratorMood = 'Curious';
+  let initialTime: CuratorTime = '4 Hours';
+  let initialTimeHours = 4;
+  let initialStyle: CuratorTravelStyle = 'Walking';
 
-  // UI Flow States: 'idle' | 'loading' | 'success' | 'error'
-  const [uiState, setUiState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [synthesizedTrail, setSynthesizedTrail] = useState<RichTrail | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  if (promptParam) {
+    const q = promptParam.toLowerCase();
+    if (q.includes('fontainhas')) initialLocation = 'Fontainhas Latin Quarter';
+    if (q.includes('altinho')) initialLocation = 'Altinho Hilltop & Viewpoints';
+    if (q.includes('campal')) initialLocation = 'Campal & Mandovi Waterfront';
 
-  // Note: auto-synthesis on load removed — user triggers generation via "Synthesize" button
-  // to avoid consuming Gemini API quota on every page visit.
+    if (q.includes('coffee') || q.includes('cafe')) initialInterests.push('Coffee & Roasteries');
+    if (q.includes('book') || q.includes('read')) initialInterests.push('Books & Prints');
+    if (q.includes('mural') || q.includes('art')) initialInterests.push('Art & Culture');
+    if (q.includes('sunset') || q.includes('view')) initialInterests.push('Viewpoints & Vistas');
 
+    if (q.includes('relaxed') || q.includes('slow')) initialMood = 'Relaxed';
+    if (q.includes('quiet') || q.includes('peaceful')) initialMood = 'Contemplative';
 
-  const handleSynthesize = async (overridePrompt?: string) => {
-    const activePrompt = overridePrompt ?? prompt;
-    if (!activePrompt.trim()) {
-      setErrorMessage('Please enter an expedition prompt or select a seed intent.');
-      return;
+    if (q.includes('1 hour') || q.includes('1h')) {
+      initialTime = '1 Hour';
+      initialTimeHours = 1;
+    } else if (q.includes('2 hour') || q.includes('2h')) {
+      initialTime = '2 Hours';
+      initialTimeHours = 2;
+    } else if (q.includes('3 hour') || q.includes('3h')) {
+      initialTime = '3 Hours';
+      initialTimeHours = 3;
     }
-
-    setUiState('loading');
-    setErrorMessage(null);
-
-    try {
-      const trail = await generateTrail({
-        prompt: activePrompt,
-        locus: calibration.locus,
-        timeHours: calibration.timeHours,
-        tags: calibration.tags,
-        maxDistanceKm: calibration.maxDistanceKm,
-      });
-
-      setSynthesizedTrail(trail);
-      setUiState('success');
-
-      // Scroll smoothly to dossier result
-      setTimeout(() => {
-        const el = document.getElementById('dossier-result');
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-          window.scrollTo({ top: 520, behavior: 'smooth' });
-        }
-      }, 100);
-    } catch (err) {
-      console.error('[AI Discovery] generateTrail unexpected error:', err);
-      const fallback = createCuratedTrail({
-        prompt: activePrompt,
-        tags: calibration.tags,
-        timeHours: calibration.timeHours,
-      });
-      setSynthesizedTrail(fallback);
-      setUiState('success');
-    }
-  };
-
-  const handleSelectSeed = (seed: string) => {
-    setPrompt(seed);
-    setErrorMessage(null);
-
-    // Build updated calibration based on seed keywords
-    let updatedCalibration = calibration;
-    if (seed.includes('espresso')) {
-      updatedCalibration = { ...calibration, tags: ['Coffee', 'Books', 'Historic Alleys'], timeHours: 2.0 };
-    } else if (seed.includes('murals')) {
-      updatedCalibration = { ...calibration, tags: ['Murals', 'Pottery', 'River Sunset'], timeHours: 2.5 };
-    } else if (seed.includes('courtyard')) {
-      updatedCalibration = { ...calibration, tags: ['Courtyards', 'Colonial Heritage', 'Zero Crowds'], timeHours: 2.0 };
-    }
-    setCalibration(updatedCalibration);
-
-    handleSynthesize(seed);
-  };
-
-  const handleReset = () => {
-    setPrompt('');
-    setCalibration({
-      locus: 'Panaji, Goa',
-      locusSub: 'Fontainhas / Latin Quarter Core',
-      timeHours: 2.0,
-      tags: ['Coffee', 'Art', 'Quiet'],
-      maxDistanceKm: 5.0,
-    });
-    setSynthesizedTrail(null);
-    setUiState('idle');
-    setErrorMessage(null);
-  };
+  }
 
   return (
     <div className="min-h-screen bg-[#F4F2EB] text-[#183D2B] flex flex-col">
-
-      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-16 space-y-6 w-full">
-        {/* Header Ribbon & Heading */}
-        <AIDiscoveryHeader />
-
-        {/* Error Alert */}
-        {errorMessage && (
-          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-mono flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        {/* Card 01: Natural Language Intent */}
-        <AIIntentInput
-          prompt={prompt}
-          onChange={(val) => {
-            setPrompt(val);
-            setErrorMessage(null);
-          }}
-          onSubmit={() => handleSynthesize()}
-          onSelectSeed={handleSelectSeed}
-          isLoading={uiState === 'loading'}
-        />
-
-        {/* Card 02: Reconnaissance Parameters & Calibration */}
-        <AICalibrationCard
-          calibration={calibration}
-          onChange={(updates) => setCalibration((prev) => ({ ...prev, ...updates }))}
-          onReset={handleReset}
-          onSynthesize={() => handleSynthesize()}
-          isLoading={uiState === 'loading'}
-        />
-
-        {/* Loading State Spinner */}
-        {uiState === 'loading' && (
-          <div className="p-12 rounded-2xl border border-[#183D2B]/15 bg-[#FAF8F3] text-center space-y-4 shadow-sm animate-pulse">
-            <div className="w-12 h-12 rounded-full border-3 border-[#183D2B] border-t-transparent animate-spin mx-auto text-[#183D2B]" />
-            <div className="space-y-1">
-              <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#4E6B48] font-bold block">
-                SYNTHESIZING HEURISTIC TRAVERSE...
-              </span>
-              <p className="text-sm font-serif italic text-[#183D2B]/80">
-                Scanning Panaji Urban Matrix for [{calibration.tags.join(', ')}] with unhurried cadence...
-              </p>
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-20 w-full space-y-8">
+        {/* Top Header Badge */}
+        <div className="border-b border-[#183D2B]/10 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#183D2B]/5 border border-[#183D2B]/10 text-xs font-mono text-[#183D2B] mb-2 font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-[#E36A2E]" />
+              <span>AI Trail Curator · Panaji Studio</span>
             </div>
+            <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#183D2B] tracking-tight">
+              Personalized Walking Trail Generator
+            </h1>
+            <p className="mt-2 text-sm sm:text-base text-[#183D2B]/75 font-sans max-w-2xl">
+              Turn your schedule, mood, and curiosities into a sequenced pedestrian itinerary. Verified against 24+ vetted Panaji locations with authentic dwell times and walking corridors.
+            </p>
           </div>
-        )}
 
-        {/* Synthesized Trail Result Dossier */}
-        {uiState === 'success' && synthesizedTrail && (
-          <div id="dossier-result" className="scroll-mt-6">
-            <AISynthesizedDossier
-              trail={synthesizedTrail}
-              onRegenerate={() => handleSynthesize()}
-              isRegenerating={false}
-            />
+          <div className="flex items-center gap-3 text-xs font-mono text-[#183D2B]/70 shrink-0">
+            <span className="flex items-center gap-1.5 bg-white/80 px-3 py-1.5 rounded-xl border border-[#183D2B]/10">
+              <Footprints className="w-3.5 h-3.5 text-[#E36A2E]" />
+              <span>Pedestrian Cadence</span>
+            </span>
+            <span className="flex items-center gap-1.5 bg-white/80 px-3 py-1.5 rounded-xl border border-[#183D2B]/10">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#4E6B48]" />
+              <span>100% Foot-Verified</span>
+            </span>
           </div>
-        )}
+        </div>
+
+        {/* Trail Curator Studio Component */}
+        <TrailCuratorStudio
+          initialPreferences={{
+            location: initialLocation,
+            availableTime: initialTime,
+            timeHours: initialTimeHours,
+            interests: Array.from(new Set(initialInterests)),
+            mood: initialMood,
+            travelStyle: initialStyle,
+          }}
+        />
       </main>
 
-      {/* Field Desk Footer */}
       <FieldDeskFooter />
     </div>
+  );
+}
+
+export default function AIDiscoveryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F4F2EB] flex items-center justify-center">
+          <div className="text-xs font-mono text-[#183D2B]/60 uppercase">Loading AI Trail Curator...</div>
+        </div>
+      }
+    >
+      <AIDiscoveryContent />
+    </Suspense>
   );
 }
